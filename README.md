@@ -14,7 +14,7 @@
 	The script will create a main table with all potential patients (denominator) and a series of flags (i.e., problem list diagnosis, outpatient diagnoses, etc…) to help gauge the most accurate algorithm to define each sub-group. This code will pull all active problem list records and the last three years of outpatient diagnoses
     After this step, we will implement the following flags to pull/calculate additional indicators for each group.
 *	ESLD:
-**	Labs results (Albumin, INR, Creatinine, Bilirubin, and sodium) Find the latest set of labs that took place within 48 hours.
+* *	Labs results (Albumin, INR, Creatinine, Bilirubin, and sodium) Find the latest set of labs that took place within 48 hours.
 **	MELD
 **	Dialysis (limited since outpatient episodes don’t get recorded at UCLA*)
 *	Advance cancer:
