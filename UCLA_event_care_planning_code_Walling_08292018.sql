@@ -429,15 +429,17 @@ select distinct coh.pat_id
       ,0 as DX_ALS
       ,0 AS DX_CIRRHOSIS
       ,0 AS ANY_PL_DX
-      ,case when mp.pat_id is not null then 1 else 0 end as active_mychart
+      ,case when mp.pat_id is not null then 1 else 0 end as ACTIVE_MYCHART
+      ,ROUND(MONTHS_BETWEEN(CURRENT_DATE,pat.birth_date)/12) as CURRENT_AGE
 from (
         select pat_id
             ,pat_enc_csn_id
             ,count(pat_enc_csn_id) over (partition by pat_id) as pat_enc_count 
         from js_xdr_walling_enc_list
                 ) coh
+left join clarity.patient pat on coh.pat_id = pat.pat_id
 left join clarity.myc_patient mp on coh.pat_id = mp.pat_id
-                    and (mp.status_cat_c is null or mp.status_cat_c = 1);                
+                    and (mp.status_cat_c is null or mp.status_cat_c = 1)                
     where pat_enc_count > 1 -- at least 2 encounters
 ;
 select count(distinct pat_id) as pat_count FROM js_xdr_walling_final_pat_coh;
