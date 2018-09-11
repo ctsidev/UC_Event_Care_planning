@@ -335,11 +335,11 @@ from js_xdr_WALLING_LAB_DRV
 group by LAB_FLAG;
 
 /* 
-ALBUMIN	    27
-BILIRUBIN	5
-CREATININE	14
-INR	        1
-SODIUM	    7
+SODIUM	6
+INR	1
+CREATININE	9
+BILIRUBIN	4
+ALBUMIN	10
 */
 
 /****************************************************************************
