@@ -970,7 +970,8 @@ CREATE TABLE js_xdr_walling_lab AS
                   else ord_num_value end as harm_num_val,
                 cc.common_name
               FROM order_results           o
-              JOIN order_proc              p   ON p.order_proc_id = o.order_proc_id 
+              JOIN order_proc              p   ON p.order_proc_id = o.order_proc_id
+              JOIN order_proc_2            op2 on p.ORDER_PROC_ID = op2.ORDER_PROC_ID 
               JOIN js_xdr_walling_final_pat_coh    coh ON p.pat_id = coh.pat_id AND (coh.PL_CIRRHOSIS = 1 OR COH.DX_CIRRHOSIS = 1)
               JOIN clarity_component       cc  ON o.component_id = cc.component_id
               LEFT JOIN lnc_db_main                ldm ON CC.DEFAULT_LNC_ID = ldm.record_id 
