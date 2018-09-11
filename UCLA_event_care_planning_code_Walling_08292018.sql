@@ -1908,6 +1908,77 @@ from (
 WHERE RECORD_ID < 11
 ;          
 
+
+/****************************************************************************
+Step 10:     ALS
+            
+****************************************************************************/ 
+--------------------------------------------------------------
+--  Step 10.1:     Create and update ALS criteria flag
+--
+--              PL and DX
+--------------------------------------------------------------
+ALTER TABLE js_xdr_walling_final_pat_coh ADD ALS NUMBER;
+
+UPDATE js_xdr_walling_final_pat_coh
+SET ALS = 1
+WHERE
+    PAT_ID IN (
+                SELECT DISTINCT PAT_ID
+                FROM js_xdr_walling_final_pat_coh
+                WHERE
+                    --PL and 1 admission with a COPD diagnosis (not necessarily principal)
+                    PL_ALS = 1 AND DX_ALS = 1
+                )
+;
+COMMIT;
+-------------------------------------------
+--  Step 10.2:     calculate counts
+-------------------------------------------
+SELECT 
+        PL_ALS
+        ,DX_ALS
+        ,AD
+        ,POLST
+,COUNT(DISTINCT PAT_ID) 
+FROM js_xdr_walling_final_pat_coh
+WHERE ALS = 1
+group by PL_ALS
+        ,DX_ALS
+        ,AD
+        ,POLST;
+
+
+----------------------------------------------------
+--Step 10.3:  Pull sample for chart review. Export to xlsx file
+----------------------------------------------------
+select mrn
+        ,PL_ALS
+        ,DX_ALS
+        ,AD
+        ,POLST
+        ,'PL and 1 DX' as sample_group
+        --These are placeholder fields to be filled out by the Investigator reviewing the charts
+        ,NULL as "Advanced Illness Group"
+        ,NULL as "Advanced condition?"
+        ,NULL as "Notes"
+        ,NULL as "ACP Priority"
+        ,NULL as "Necessary	AD/POLST"
+        ,NULL as "Right?"
+        ,NULL as "Notes"
+        ,NULL as "Year"        
+from (
+        SELECT ROWNUM AS RECORD_ID
+                ,pat.pat_mrn_id as mrn
+                ,coh.*
+        FROM js_xdr_walling_final_pat_coh  coh
+        join patient                        pat on coh.pat_id = pat.pat_id
+        where
+            ALS = 1
+        ORDER BY dbms_random.random)
+WHERE RECORD_ID < 11
+;          
+
 /****************************************************************************
 Step 10:     Clean up
             
