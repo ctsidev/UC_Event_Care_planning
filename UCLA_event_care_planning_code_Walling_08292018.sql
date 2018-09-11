@@ -409,7 +409,7 @@ select count(*) from js_xdr_walling_enc_list;
 --Create master file based on denominator (visits) and flags based on diseases (PL and DX).
 drop table js_xdr_walling_final_pat_coh purge;
 create table js_xdr_walling_final_pat_coh as
-select distinct pat_id
+select distinct coh.pat_id
       ,0 as PL_advanced_cancer
       ,0 as PL_ESLD
       ,0 as PL_COPD
@@ -428,13 +428,16 @@ select distinct pat_id
       ,0 as DX_Parkinsons
       ,0 as DX_ALS
       ,0 AS DX_CIRRHOSIS
-      ,0 AS ANY_PL_DX;
+      ,0 AS ANY_PL_DX
+      ,case when mp.pat_id is not null then 1 else 0 end as active_mychart
 from (
         select pat_id
             ,pat_enc_csn_id
             ,count(pat_enc_csn_id) over (partition by pat_id) as pat_enc_count 
         from js_xdr_walling_enc_list
-                )
+                ) coh
+left join clarity.myc_patient mp on coh.pat_id = mp.pat_id
+                    and (mp.status_cat_c is null or mp.status_cat_c = 1);                
     where pat_enc_count > 1 -- at least 2 encounters
 ;
 select count(distinct pat_id) as pat_count FROM js_xdr_walling_final_pat_coh;
@@ -1198,6 +1201,7 @@ SELECT
         ,ESDL_B
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,COUNT(DISTINCT PAT_ID) 
 FROM js_xdr_walling_final_pat_coh
 WHERE ESDL_A = 1 or ESDL_B = 1
@@ -1209,7 +1213,8 @@ group by pl_ESDL_decompensation
         ,ESDL_A
         ,ESDL_B
         ,AD
-        ,POLST;
+        ,POLST
+        ,ACTIVE_MYCHART;
 
 ----------------------------------------------------
 --Step 6.8  Pull sample for chart review. Export to xlsx file
@@ -1224,6 +1229,7 @@ select mrn
         ,ESDL_B
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,'PL cirrhosis + [hepatic decompensation (PL or dx)' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
         ,NULL as "Advanced condition?"
@@ -1255,6 +1261,7 @@ select mrn
         ,ESDL_B
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,'PL cirrhosis or MELD >18' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
         ,NULL as "Advanced Illness Group"
@@ -1529,6 +1536,7 @@ SELECT
         ,CHEMO_TIMEFRAME
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,CANCER_A
         ,CANCER_B
 ,COUNT(DISTINCT PAT_ID) 
@@ -1540,6 +1548,7 @@ group by pl_ADVANCED_CANCER
         ,CHEMO_TIMEFRAME
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,CANCER_A
         ,CANCER_B;
 ----------------------------------------------------
@@ -1552,6 +1561,7 @@ select mrn
         ,CHEMO_TIMEFRAME
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,CANCER_A
         ,CANCER_B
         ,'PL + Oncology visit last year' as sample_group
@@ -1582,6 +1592,7 @@ select mrn
         ,CHEMO_TIMEFRAME
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,CANCER_A
         ,CANCER_B
         ,CANCER_B
@@ -1707,6 +1718,7 @@ SELECT
         ,CHF_HOSP
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,CHF_A
         ,CHF_B
 ,COUNT(DISTINCT PAT_ID) 
@@ -1718,6 +1730,7 @@ group by  PL_CHF
         ,CHF_HOSP
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,CHF_A
         ,CHF_B;
 
@@ -1731,6 +1744,7 @@ select mrn
         ,CHF_HOSP
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,CHF_A
         ,CHF_B
         ,'AV(DX) + chemotherapy last two years' as sample_group
@@ -1761,6 +1775,7 @@ select mrn
         ,CHF_HOSP
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,CHF_A
         ,CHF_B
         ,'AV(DX) + chemotherapy last two years' as sample_group
@@ -1865,6 +1880,7 @@ SELECT
         ,DX_COPD_SPO2
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
 ,COUNT(DISTINCT PAT_ID) 
 FROM js_xdr_walling_final_pat_coh
 WHERE copd = 1
@@ -1874,7 +1890,8 @@ group by PL_COPD
         ,PL_COPD_SPO2
         ,DX_COPD_SPO2
         ,AD
-        ,POLST;
+        ,POLST
+        ,ACTIVE_MYCHART;
 
 
 ----------------------------------------------------
@@ -1886,6 +1903,9 @@ select mrn
         ,PL_COPD_SPO2
         ,DX_COPD_SPO2
         ,COPD_HOSP
+        ,AD
+        ,POLST
+        ,ACTIVE_MYCHART
         ,'PL and 1 admission with a COPD diagnosis (not necessarily principal)' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
         ,NULL as "Advanced Illness Group"
@@ -1940,13 +1960,15 @@ SELECT
         ,DX_ALS
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
 ,COUNT(DISTINCT PAT_ID) 
 FROM js_xdr_walling_final_pat_coh
 WHERE ALS = 1
 group by PL_ALS
         ,DX_ALS
         ,AD
-        ,POLST;
+        ,POLST
+        ,ACTIVE_MYCHART;
 
 
 ----------------------------------------------------
@@ -1957,6 +1979,7 @@ select mrn
         ,DX_ALS
         ,AD
         ,POLST
+        ,ACTIVE_MYCHART
         ,'PL and 1 DX' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
         ,NULL as "Advanced Illness Group"
