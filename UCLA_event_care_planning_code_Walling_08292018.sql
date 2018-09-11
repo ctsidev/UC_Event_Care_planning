@@ -439,12 +439,53 @@ from (
                 ) coh
 left join clarity.patient pat on coh.pat_id = pat.pat_id
 left join clarity.myc_patient mp on coh.pat_id = mp.pat_id
-                    and (mp.status_cat_c is null or mp.status_cat_c = 1)                
+                    and (mp.status_cat_c is null or mp.status_cat_c = 1)                                 
     where pat_enc_count > 1 -- at least 2 encounters
 ;
 select count(distinct pat_id) as pat_count FROM js_xdr_walling_final_pat_coh;
+
+
+----------------------------------------------------------------------------
+--Step 2.4:     Removed Restricted patients
+--              Each site might have different codes for these patients
+----------------------------------------------------------------------------
+
+    ----------------------------------------------------------------------------
+    --Step 2.4.1:     Look up flag values on your EPIC site and adapt
+    --                Each site might have different codes for these patients
+    ----------------------------------------------------------------------------
+select * 
+From ZC_BPA_TRIGGER_FYI;
+
+/*
+1018	Control
+1053	Restricted Data -Permanent
+6	Tracked
+8	Restricted Data
+9	Test Patient
+*/
+
+    ----------------------------------------------------------------------------
+    --Step 2.4.2:     Removed Restricted patients
+
+    ----------------------------------------------------------------------------
+delete from js_xdr_walling_final_pat_coh 
+where pat_id in 
+                (
+                select distinct coh.pat_id 
+                from js_xdr_walling_final_pat_coh      coh
+                LEFT JOIN patient_fyi_flags            flags on coh.pat_id = flags.patient_id
+                LEFT JOIN patient_3                          on coh.pat_id = patient_3.pat_id
+                WHERE
+                            (patient_3.is_test_pat_yn = 'Y'
+                            OR flags.PAT_FLAG_TYPE_C in (6,8,9,1018,1053))
+            );
+commit;
+
+select count(*) from js_xdr_walling_final_pat_coh;
 -- This will be considered the working denominator
--- 137,712 with 2 office visits
+-- 137,345 with 2 office visits
+
 
 
 /****************************************************************************
@@ -884,6 +925,7 @@ Step 6:     ESLD - calculate counts
 --Step 6.1:     Pull Labs based on lab driver LOINC codes
 --               order_type_c = 7 is Lab Test, Check the codes at your site 
 ---------------------------------------------------------------------------- 
+DROP TABLE js_xdr_walling_lab PURGE;
 CREATE TABLE js_xdr_walling_lab AS 
   SELECT 	DISTINCT coh.pat_id,
                 o.pat_enc_csn_id, 
@@ -939,9 +981,8 @@ CREATE TABLE js_xdr_walling_lab AS
                       --and p.ordering_date between to_date('03/01/2013','mm/dd/yyyy') and to_date('05/08/2018','mm/dd/yyyy')
                       and o.ord_value is not null
                       and o.order_proc_id is not null
-                      AND p.order_time BETWEEN SYSDATE - (365.25 * 3) - SYSDATE;
+                      AND p.order_time BETWEEN SYSDATE - (365.25 * 3) AND SYSDATE;
 
-LEFT JOIN lnc_db_main ldm on CC.DEFAULT_LNC_ID = ldm.record_id 
 ----------------------------------------------------------------------------
 --Step 6.2:     Create MELD labs table
 ----------------------------------------------------------------------------
