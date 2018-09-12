@@ -987,9 +987,6 @@ CREATE TABLE js_xdr_walling_lab AS
 ----------------------------------------------------------------------------
 --Step 6.2:     Create MELD labs table
 ----------------------------------------------------------------------------
-----------------------------------------------------------------------------
---Step 6.2.1:     Pull latest MELD related labs
-----------------------------------------------------------------------------
 DROP table js_xdr_walling_MELD_LABS PURGE;
 create table js_xdr_walling_MELD_LABS as
 select * from (
@@ -1061,7 +1058,7 @@ select DISTINCT x.PAT_ID
                 ;
                 
 SELECT COUNT(*),COUNT(DISTINCT PAT_ID) FROM js_xdr_walling_MELD_LABS                ;--2949	177
-SELECT * FROM js_xdr_walling_MELD_LABS
+SELECT * FROM js_xdr_walling_MELD_LABS;
 
 
 ----------------------------------------------------------------------------
@@ -2114,8 +2111,159 @@ from (
 WHERE RECORD_ID < 11
 ;          
 
+
+
+
+--[PL = 1 or DX >= 1] and Nephrology visit (inpt or ambulatory) in the past year
 /****************************************************************************
-Step 10:     Clean up
+Step 11:    ESRD
+            
+****************************************************************************/  
+--------------------------------------------------------------
+-- Step 11.1: Pull Nephrology visit (inpt or ambulatory) in the past year
+--------------------------------------------------------------
+DROP TABLE xdr_walling_NEPH PURGE;
+CREATE TABLE xdr_walling_NEPH AS
+SELECT DISTINCT  PAT.PAT_ID
+                ,enc.PAT_ENC_CSN_ID
+                ,enc.EFFECTIVE_DATE_DT
+                ,dep.specialty 
+                ,prv.primary_specialty
+FROM js_xdr_walling_final_pat_coh          coh
+JOIN PAT_ENC                            enc on coh.pat_id = enc.pat_id
+JOIN PATIENT                            pat ON COH.PAT_ID = PAT.PAT_ID
+LEFT JOIN CLARITY_DEP                   dep ON enc.department_id = dep.department_id
+LEFT JOIN v_cube_d_provider             prv ON enc.visit_prov_id = prv.provider_id
+WHERE 
+--with ESRD
+    (coh.PL_ESRD = 1 OR COH.DX_ESRD = 1)
+    AND
+            (REGEXP_LIKE(dep.specialty,'Neph','i')
+            OR
+            REGEXP_LIKE(prv.primary_specialty,'Neph','i')
+            )
+    AND enc.EFFECTIVE_DATE_DT between sysdate - (365.25) AND sysdate
+    ; 
+select count(*), count(distinct pat_id) from js_xdr_walling_onc                ;--13897	1168  
+
+
+
+--------------------------------------------------------------
+-- Step 11.2: Create and update NEPH_VISIT criteria flag
+--
+--------------------------------------------------------------
+ALTER TABLE js_xdr_walling_final_pat_coh ADD NEPH_VISIT NUMBER;
+
+UPDATE js_xdr_walling_final_pat_coh
+SET NEPH_VISIT = 1
+WHERE
+    PAT_ID IN (
+                SELECT DISTINCT PAT_ID
+                FROM xdr_walling_NEPH
+                )
+;      --897
+COMMIT;
+
+--------------------------------------------------------------
+-- Step 11.3: Create and update ESRD criteria flag
+--
+--------------------------------------------------------------
+ALTER TABLE js_xdr_walling_final_pat_coh ADD ESRD NUMBER;
+
+UPDATE js_xdr_walling_final_pat_coh
+SET ESRD = 1
+WHERE
+    (
+       (PL_ESRD = 1 OR DX_ESRD = 1 )
+        AND NEPH_VISIT = 1
+    )
+    OR
+    (PL_ESRD = 1 AND DX_ESRD = 1)
+;      --897
+COMMIT;
+
+--------------------------------------------------------------
+-- Step 11.4: Gather counts
+--------------------------------------------------------------
+SELECT 
+        PL_ESRD
+        ,DX_ESRD
+        ,NEPH_VISIT
+        ,AD
+        ,POLST
+        ,ACTIVE_MYCHART
+,COUNT(DISTINCT PAT_ID) 
+FROM js_xdr_walling_final_pat_coh
+WHERE PL_ESRD = 1 OR DX_ESRD = 1
+group by PL_ESRD
+        ,DX_ESRD
+        ,NEPH_VISIT
+        ,AD
+        ,POLST;
+
+----------------------------------------------------
+--Step 11.5  Pull sample for chart review. Export to xlsx file
+----------------------------------------------------
+select mrn
+        ,PL_ESRD
+        ,DX_ESRD
+        ,NEPH_VISIT
+        ,AD
+        ,POLST
+        ,ACTIVE_MYCHART
+        ,'[PL = 1 or DX >= 1] and Nephrology visit (inpt or ambulatory) in the past year' as sample_group
+        --These are placeholder fields to be filled out by the Investigator reviewing the charts
+        ,NULL as "Advanced condition?"
+        ,NULL as "Advanced Illness Group"
+        ,NULL as "Notes"
+        ,NULL as "ACP Priority"
+        ,NULL as "Necessary	AD/POLST"
+        ,NULL as "Right?"
+        ,NULL as "Notes"
+        ,NULL as "Year"        
+from (
+        SELECT ROWNUM AS RECORD_ID
+                ,pat.pat_mrn_id as mrn
+                ,coh.*
+        FROM js_xdr_walling_final_pat_coh  coh
+        join patient                        pat on coh.pat_id = pat.pat_id
+        where
+            (PL_ESRD = 1 OR DX_ESRD = 1 )
+            AND NEPH_VISIT = 1
+        ORDER BY dbms_random.random)
+WHERE RECORD_ID < 11
+UNION
+select mrn
+        ,PL_ESRD
+        ,DX_ESRD
+        ,NEPH_VISIT
+        ,AD
+        ,POLST
+        ,ACTIVE_MYCHART
+        ,'[PL = 1 AND DX = 1]' as sample_group
+        --These are placeholder fields to be filled out by the Investigator reviewing the charts
+        ,NULL as "Advanced condition?"
+        ,NULL as "Advanced Illness Group"
+        ,NULL as "Notes"
+        ,NULL as "ACP Priority"
+        ,NULL as "Necessary	AD/POLST"
+        ,NULL as "Right?"
+        ,NULL as "Notes"
+        ,NULL as "Year"        
+from (
+        SELECT ROWNUM AS RECORD_ID
+                ,pat.pat_mrn_id as mrn
+                ,coh.*
+        FROM js_xdr_walling_final_pat_coh  coh
+        join patient                        pat on coh.pat_id = pat.pat_id
+        where
+            (PL_ESRD = 1 AND DX_ESRD = 1 )
+        ORDER BY dbms_random.random)
+WHERE RECORD_ID < 11;
+
+
+/****************************************************************************
+Step 12:     Clean up
             
 ****************************************************************************/   
 DROP TABLE js_xdr_walling_IMFP_dept_drv PURGE;
@@ -2128,6 +2276,7 @@ DROP TABLE js_xdr_walling_dx_all PURGE;
 DROP TABLE js_xdr_walling_scan_docs PURGE;
 DROP TABLE js_xdr_walling_AD_POLST PURGE ;
 DROP table js_xdr_walling_MELD_LABS PURGE;
+DROP TABLE js_xdr_walling_MELD_LABS_FINAL PURGE;
 DROP TABLE js_xdr_walling_dialysis PURGE;
 DROP TABLE js_xdr_walling_DIALYSIS_final PURGE;
 DROP TABLE js_xdr_WALLING_MELD PURGE;
@@ -2137,5 +2286,7 @@ DROP TABLE js_xdr_WALLING_med_CHEMO PURGE;
 DROP TABLE js_xdr_WALLING_CHEMO PURGE;
 DROP TABLE js_xdr_WALLING_CHF_HOSP PURGE; 
 DROP TABLE js_xdr_WALLING_COPD_HSP PURGE; 
+DROP TABLE xdr_walling_NEPH PURGE; 
 DROP TABLE js_xdr_WALLING_DX_LOOKUP_TEMP PURGE;
+
 
