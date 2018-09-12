@@ -987,65 +987,133 @@ CREATE TABLE js_xdr_walling_lab AS
 ----------------------------------------------------------------------------
 --Step 6.2:     Create MELD labs table
 ----------------------------------------------------------------------------
+----------------------------------------------------------------------------
+--Step 6.2.1:     Pull latest MELD related labs
+----------------------------------------------------------------------------
 DROP table js_xdr_walling_MELD_LABS PURGE;
 create table js_xdr_walling_MELD_LABS as
 select * from (
 select DISTINCT x.PAT_ID
                     ,x.BILIRUBIN
-                    ,x.BILIRUBIN_SPECIMN_TAKEN_TIME
+                    ,x.BILIRUBIN_result_time
                     ,x.INR
-                    ,x.INR_SPECIMN_TAKEN_TIME
+                    ,x.INR_result_time
+                    ,x.diff_INR
                     ,x.ALBUMIN
-                    ,x.ALBUMIN_SPECIMN_TAKEN_TIME
+                    ,x.ALBUMIN_result_time
+                    ,x.diff_ALBUMIN
                     ,x.CREATININE
-                    ,x.CREATININE_SPECIMN_TAKEN_TIME
+                    ,x.CREATININE_result_time
+                    ,x.diff_creatinine
                     ,x.SODIUM
-                    ,x.SODIUM_SPECIMN_TAKEN_TIME
-                    ,MAX(x.BILIRUBIN_SPECIMN_TAKEN_TIME) OVER (PARTITION BY x.PAT_ID) AS LATEST_LAB
+                    ,x.SODIUM_result_time
+                    ,x.diff_SODIUM
+                    ,MAX(x.BILIRUBIN_result_time) OVER (PARTITION BY x.PAT_ID) AS LATEST_LAB
  from (
          SELECT DISTINCT bili.PAT_ID
-                            ,bili.SPECIMN_TAKEN_TIME as BILIRUBIN_SPECIMN_TAKEN_TIME
+                            ,bili.result_time as BILIRUBIN_result_time
                             ,bili.harm_num_val as BILIRUBIN
                             ,inr.INR
-                            ,inr.INR_SPECIMN_TAKEN_TIME
+                            ,inr.INR_result_time
+                            ,ABS(bili.result_time - inr.INR_result_time) as diff_INR
                             ,alb.ALBUMIN
-                            ,alb.ALBUMIN_SPECIMN_TAKEN_TIME
+                            ,alb.ALBUMIN_result_time
+                            ,ABS(bili.result_time - alb.ALBUMIN_result_time) as diff_ALBUMIN
                             ,cr.CREATININE
-                            ,cr.CREATININE_SPECIMN_TAKEN_TIME
+                            ,cr.CREATININE_result_time
+                            ,ABS(bili.result_time - cr.CREATININE_result_time) as diff_creatinine
                             ,sod.SODIUM
-                            ,sod.SODIUM_SPECIMN_TAKEN_TIME
+                            ,sod.SODIUM_result_time
+                            ,ABS(bili.result_time - sod.SODIUM_result_time) as diff_sodium
                         FROM js_xdr_walling_lab bili
                         JOIN (SELECT DISTINCT lab.PAT_ID
-                                    ,lab.SPECIMN_TAKEN_TIME as INR_SPECIMN_TAKEN_TIME
+                                    ,lab.result_time as INR_result_time
                                     ,lab.harm_num_val as INR
-                                    --,MAX(lab.SPECIMN_TAKEN_TIME) OVER (PARTITION BY PAT_ID) AS LATEST_LAB
+                                    
+                                    --,MAX(lab.result_time) OVER (PARTITION BY PAT_ID) AS LATEST_LAB
                                 FROM js_xdr_walling_lab lab
-                                WHERE LAB.LAB_FLAG = 'INR' AND lab.harm_num_val <> 9999999) inr on bili.pat_id = inr.pat_id and (bili.SPECIMN_TAKEN_TIME - inr.INR_SPECIMN_TAKEN_TIME) between -1 and 1
+                                WHERE LAB.LAB_FLAG = 'INR' AND lab.harm_num_val <> 9999999) inr on bili.pat_id = inr.pat_id and (bili.result_time - inr.INR_result_time) between -1 and 1
                         JOIN (SELECT DISTINCT lab.PAT_ID
-                                    ,lab.SPECIMN_TAKEN_TIME as ALBUMIN_SPECIMN_TAKEN_TIME
+                                    ,lab.result_time as ALBUMIN_result_time
                                     ,lab.harm_num_val as ALBUMIN
-                                    --,MAX(lab.SPECIMN_TAKEN_TIME) OVER (PARTITION BY PAT_ID) AS LATEST_LAB
+                                    
+                                    --,MAX(lab.result_time) OVER (PARTITION BY PAT_ID) AS LATEST_LAB
                                 FROM js_xdr_walling_lab lab
-                                WHERE LAB.LAB_FLAG = 'ALBUMIN' AND lab.harm_num_val <> 9999999) alb on bili.pat_id = alb.pat_id and (bili.SPECIMN_TAKEN_TIME - alb.ALBUMIN_SPECIMN_TAKEN_TIME) between -1 and 1
+                                WHERE LAB.LAB_FLAG = 'ALBUMIN' AND lab.harm_num_val <> 9999999) alb on bili.pat_id = alb.pat_id and (bili.result_time - alb.ALBUMIN_result_time) between -1 and 1
                         JOIN (SELECT DISTINCT lab.PAT_ID
-                                    ,lab.SPECIMN_TAKEN_TIME as CREATININE_SPECIMN_TAKEN_TIME
+                                    ,lab.result_time as CREATININE_result_time
                                     ,lab.harm_num_val as CREATININE
-                                    --,MAX(lab.SPECIMN_TAKEN_TIME) OVER (PARTITION BY PAT_ID) AS LATEST_LAB
+                                    
+                                    --,MAX(lab.result_time) OVER (PARTITION BY PAT_ID) AS LATEST_LAB
                                 FROM js_xdr_walling_lab lab
-                                WHERE LAB.LAB_FLAG = 'CREATININE' AND lab.harm_num_val <> 9999999) cr on bili.pat_id = cr.pat_id and (bili.SPECIMN_TAKEN_TIME - cr.CREATININE_SPECIMN_TAKEN_TIME) between -1 and 1                        
+                                WHERE LAB.LAB_FLAG = 'CREATININE' AND lab.harm_num_val <> 9999999) cr on bili.pat_id = cr.pat_id and (bili.result_time - cr.CREATININE_result_time) between -1 and 1                        
                         JOIN (SELECT DISTINCT lab.PAT_ID
-                                    ,lab.SPECIMN_TAKEN_TIME as SODIUM_SPECIMN_TAKEN_TIME
+                                    ,lab.result_time as SODIUM_result_time
                                     ,lab.harm_num_val as SODIUM
-                                    --,MAX(lab.SPECIMN_TAKEN_TIME) OVER (PARTITION BY PAT_ID) AS LATEST_LAB
+                                    
+                                    --,MAX(lab.result_time) OVER (PARTITION BY PAT_ID) AS LATEST_LAB
                                 FROM js_xdr_walling_lab lab
-                                WHERE LAB.LAB_FLAG = 'SODIUM' AND lab.harm_num_val <> 9999999) sod on bili.pat_id = sod.pat_id and (bili.SPECIMN_TAKEN_TIME - sod.SODIUM_SPECIMN_TAKEN_TIME) between -1 and 1                        
+                                WHERE LAB.LAB_FLAG = 'SODIUM' AND lab.harm_num_val <> 9999999) sod on bili.pat_id = sod.pat_id and (bili.result_time - sod.SODIUM_result_time) between -1 and 1                        
                         WHERE bili.LAB_FLAG = 'BILIRUBIN' AND bili.harm_num_val <> 9999999                
                 ) x
                 )
-                where LATEST_LAB = BILIRUBIN_SPECIMN_TAKEN_TIME
+                where LATEST_LAB = BILIRUBIN_result_time
                 ;
                 
-SELECT COUNT(*),COUNT(DISTINCT PAT_ID) FROM js_xdr_walling_MELD_LABS                ;--2932	192
+SELECT COUNT(*),COUNT(DISTINCT PAT_ID) FROM js_xdr_walling_MELD_LABS                ;--2949	177
+SELECT * FROM js_xdr_walling_MELD_LABS
+
+
+----------------------------------------------------------------------------
+--Step 6.2.2:     Create final MELD table with the most recent group of labs per patient
+----------------------------------------------------------------------------
+DROP TABLE js_xdr_walling_MELD_LABS_FINAL PURGE;
+CREATE table js_xdr_walling_MELD_LABS_FINAL as
+select pat_id
+        ,ALBUMIN
+        ,ALBUMIN_RESULT_TIME
+        ,BILIRUBIN
+        ,BILIRUBIN_RESULT_TIME
+        ,CREATININE
+        ,CREATININE_RESULT_TIME
+        ,INR
+        ,INR_RESULT_TIME
+        ,LATEST_LAB
+        ,SODIUM
+        ,SODIUM_RESULT_TIME
+from (
+        select pat_id
+                ,ALBUMIN
+                ,ALBUMIN_RESULT_TIME
+                ,MIN(ABS(LATEST_LAB - ALBUMIN_RESULT_TIME)) OVER (partition by pat_id) as last_albumin
+                ,ABS(LATEST_LAB - ALBUMIN_RESULT_TIME) as DIFF_ALBUMIN
+                ,BILIRUBIN
+                ,BILIRUBIN_RESULT_TIME
+                ,CREATININE
+                ,CREATININE_RESULT_TIME
+                ,MIN(ABS(LATEST_LAB - CREATININE_RESULT_TIME)) OVER (partition by pat_id) as last_creatinine
+                ,ABS(LATEST_LAB - CREATININE_RESULT_TIME) as DIFF_CREATININE
+                ,INR
+                ,INR_RESULT_TIME
+                ,MIN(ABS(LATEST_LAB - INR_RESULT_TIME)) OVER (partition by pat_id) as last_inr
+                ,ABS(LATEST_LAB - INR_RESULT_TIME) as DIFF_INR
+                ,LATEST_LAB
+                ,SODIUM
+                ,SODIUM_RESULT_TIME
+                ,MIN(ABS(LATEST_LAB - SODIUM_RESULT_TIME)) OVER (partition by pat_id) as last_sodium
+                ,ABS(LATEST_LAB - SODIUM_RESULT_TIME) as DIFF_SODIUM
+        from js_xdr_walling_MELD_LABS
+        )x
+where 
+diff_inr = last_inr
+and diff_sodium = last_sodium
+and diff_albumin = last_albumin
+and diff_creatinine = last_creatinine
+;
+
+select count(*), count( distinct LATEST_LAB) from js_xdr_walling_MELD_LABS_FINAL;
+
+
 
 ----------------------------------------------------------------------------
 --Step 6.3:     Pull dialysis
@@ -1066,14 +1134,14 @@ JOIN js_xdr_walling_final_pat_coh    coh ON dial.pat_id = coh.pat_id AND (coh.PL
     ----------------------------------------
 DROP table js_xdr_walling_DIALYSIS_final PURGE;
 create table js_xdr_walling_DIALYSIS_final as
-select pat_id, CREATININE_RESULT_TIME
+select pat_id, CREATININE_result_time
         from (
             select lab.pat_id
-                    ,lab.CREATININE_SPECIMN_TAKEN_TIME
+                    ,lab.CREATININE_result_time
                     ,count(dia.contact_date) dialysis_count
-            from js_xdr_walling_MELD_LABS  lab
-            join js_xdr_walling_DIALYSIS          dia  on lab.pat_id = dia.pat_id and dia.CONTACT_DATE between lab.CREATININE_SPECIMN_TAKEN_TIME - 7  and lab.CREATININE_SPECIMN_TAKEN_TIME  
-            group by lab.pat_id,lab.CREATININE_SPECIMN_TAKEN_TIME
+            from js_xdr_walling_MELD_LABS_FINAL  lab
+            join js_xdr_walling_DIALYSIS          dia  on lab.pat_id = dia.pat_id and dia.CONTACT_DATE between lab.CREATININE_result_time - 7  and lab.CREATININE_result_time  
+            group by lab.pat_id,lab.CREATININE_result_time
             )
         where dialysis_count >= 2;
 
@@ -1120,7 +1188,7 @@ from(
                     else labs.sodium
                     end sodium
         from js_xdr_walling_final_pat_coh     coh
-        JOIN js_xdr_walling_MELD_LABS                  LABS ON COH.PAT_ID = LABS.PAT_ID
+        JOIN js_xdr_walling_MELD_LABS_FINAL                  LABS ON COH.PAT_ID = LABS.PAT_ID
         left join js_xdr_walling_DIALYSIS_final        dia on labs.pat_id = dia.pat_id and labs.CREATININE_RESULT_TIME = dia.CREATININE_RESULT_TIME
         )
 );
