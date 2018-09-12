@@ -2144,7 +2144,7 @@ WHERE
             )
     AND enc.EFFECTIVE_DATE_DT between sysdate - (365.25) AND sysdate
     ; 
-select count(*), count(distinct pat_id) from js_xdr_walling_onc                ;--13897	1168  
+select count(*), count(distinct pat_id) from js_xdr_walling_neph                ;--13897	1168  
 
 
 
