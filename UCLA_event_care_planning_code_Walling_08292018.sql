@@ -259,11 +259,11 @@ PERITONITIS	13
 HEPATORENAL	2
 CHF	34
 ESRD	17
+COPD_SPO2	10
 CIRRHOSIS	25
-COPD_SPO2	2
-CANCER	176
-PARKINSONS	2
+CANCER	180
 ALS	2
+PARKINSONS	3
 BLEEDING	6
 ENCEPHALOPATHY	3
 ASCITES	4
@@ -1432,9 +1432,9 @@ ALTER TABLE js_xdr_walling_final_pat_coh ADD ONC_VISIT varchar2(25);
 MERGE INTO js_xdr_walling_final_pat_coh coh
 USING
 (select pat_id
-        ,case when MONTHS_BETWEEN(SYSDATE - (365.25 * 2),LAST_ENC_DATE) < 6 then 'SIX MONTHS'
-              when MONTHS_BETWEEN(SYSDATE - (365.25 * 2),LAST_ENC_DATE) < 12 then 'ONE YEAR'
-              when MONTHS_BETWEEN(SYSDATE - (365.25 * 2),LAST_ENC_DATE) BETWEEN 12 AND 24 then 'TWO YEAR'
+        ,case when MONTHS_BETWEEN(LAST_ENC_DATE,SYSDATE - (365.25 * 2)) < 6 then 'SIX MONTHS'
+              when MONTHS_BETWEEN(LAST_ENC_DATE,SYSDATE - (365.25 * 2)) < 12 then 'ONE YEAR'
+              when MONTHS_BETWEEN(LAST_ENC_DATE,SYSDATE - (365.25 * 2)) BETWEEN 12 AND 24 then 'TWO YEAR'
               ELSE 'NO VISIT'
         END ONC_VISIT
         ,LAST_ENC_DATE
@@ -1580,9 +1580,9 @@ ALTER TABLE js_xdr_walling_final_pat_coh ADD CHEMO_TIMEFRAME varchar2(25);
 MERGE INTO js_xdr_walling_final_pat_coh coh
 USING
 (select pat_id
-        ,case when MONTHS_BETWEEN(SYSDATE - (365.25 * 2),LAST_ENC_DATE) < 6 then 'SIX MONTHS'
-              when MONTHS_BETWEEN(SYSDATE - (365.25 * 2),LAST_ENC_DATE) < 12 then 'ONE YEAR'
-              when MONTHS_BETWEEN(SYSDATE - (365.25 * 2),LAST_ENC_DATE) BETWEEN 12 AND 24 then 'TWO YEAR'
+        ,case when MONTHS_BETWEEN(LAST_ENC_DATE, SYSDATE - (365.25 * 2)) < 6 then 'SIX MONTHS'
+              when MONTHS_BETWEEN(LAST_ENC_DATE, SYSDATE - (365.25 * 2)) < 12 then 'ONE YEAR'
+              when MONTHS_BETWEEN(LAST_ENC_DATE, SYSDATE - (365.25 * 2)) BETWEEN 12 AND 24 then 'TWO YEAR'
               ELSE 'NO VISIT'
         END CHEMO_TIMEFRAME
         ,LAST_ENC_DATE
