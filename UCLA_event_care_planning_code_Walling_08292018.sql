@@ -852,6 +852,7 @@ SELECT distinct coh.pat_id
         ,bb.SCAN_FILE
         ,bt.name as doc_type
         ,BT.DOC_GROUP
+        ,case when bb.doc_recv_time between sysdate - (365.25 *3 ) AND sysdate then 1 else 0 end three_year_ad_polst
 FROM js_xdr_walling_final_pat_coh          COH  
 join DOC_INFORMATION                    BB on coh.PAT_ID = BB.DOC_PT_ID
 join XDR_WALLING_ADPOLST_DOCTYPE        BT on BB.DOC_INFO_TYPE_C = BT.DOC_INFO_TYPE_C
@@ -873,46 +874,77 @@ WHERE
 DROP TABLE js_xdr_walling_AD_POLST PURGE ;
 CREATE TABLE js_xdr_walling_AD_POLST AS 
 SELECT DISTINCT PAT_ID
-            ,CASE WHEN POLST = 0 OR POLST IS NULL THEN 0 ELSE 1 END POLST
-            ,CASE WHEN AD = 0 OR AD IS NULL THEN 0 ELSE 1 END AD
+            ,CASE WHEN POLST_ALL = 0 OR POLST_ALL IS NULL THEN 0 ELSE 1 END POLST_ALL
+            ,CASE WHEN AD_ALL = 0 OR AD_ALL IS NULL THEN 0 ELSE 1 END AD_ALL
+            ,CASE WHEN POLST_THREE = 0 OR POLST_THREE IS NULL THEN 0 ELSE 1 END POLST_THREE
+            ,CASE WHEN AD_THREE = 0 OR AD_THREE IS NULL THEN 0 ELSE 1 END AD_THREE
 FROM (
         SELECT PAT_ID
-                ,SUM(POLST) AS POLST
-                ,SUM(AD) AS AD
+                ,SUM(POLST_ALL) AS POLST_ALL
+                ,SUM(AD_ALL) AS AD_ALL
+                ,SUM(POLST_THREE) AS POLST_THREE
+                ,SUM(AD_THREE) AS AD_THREE
         FROM (
                 SELECT DISTINCT PAT_ID
-                        ,CASE WHEN DOC_GROUP = 'POLST' THEN 1 ELSE 0 END POLST
-                        ,CASE WHEN DOC_GROUP  = 'AD' THEN 1 ELSE 0 END AD
+                        ,CASE WHEN DOC_GROUP = 'POLST' THEN 1 ELSE 0 END POLST_ALL
+                        ,CASE WHEN DOC_GROUP  = 'AD' THEN 1 ELSE 0 END AD_ALL
+                        ,CASE WHEN DOC_GROUP = 'POLST' and three_year_ad_polst = 1 THEN 1 ELSE 0 END POLST_THREE
+                        ,CASE WHEN DOC_GROUP  = 'AD' and three_year_ad_polst = 1 THEN 1 ELSE 0 END AD_THREE
                 FROM js_xdr_walling_scan_DOCS
                 )
         GROUP BY PAT_ID
     )
 ;
+    
+
 
 
 -------------------------------------------
 --  Step 5.7: Create and populate AD/POLST variables
 -------------------------------------------
-ALTER TABLE js_xdr_walling_final_pat_coh ADD AD NUMBER;
+ALTER TABLE js_xdr_walling_final_pat_coh ADD AD_ALL NUMBER;
 UPDATE js_xdr_walling_final_pat_coh
-SET AD = 1
+SET AD_ALL = 1
 WHERE PAT_ID IN 
     (
         SELECT DISTINCT PAT_ID
         FROM js_xdr_walling_AD_POLST
-        WHERE AD = 1
+        WHERE AD_ALL = 1
     );
 COMMIT;
 
 
-ALTER TABLE js_xdr_walling_final_pat_coh ADD POLST NUMBER;
+ALTER TABLE js_xdr_walling_final_pat_coh ADD POLST_ALL NUMBER;
 UPDATE js_xdr_walling_final_pat_coh
-SET POLST = 1
+SET POLST_ALL = 1
 WHERE PAT_ID IN 
     (
         SELECT DISTINCT PAT_ID
         FROM js_xdr_walling_AD_POLST
-        WHERE POLST = 1
+        WHERE POLST_ALL = 1
+    );
+COMMIT;
+
+ALTER TABLE js_xdr_walling_final_pat_coh ADD AD_THREE NUMBER;
+UPDATE js_xdr_walling_final_pat_coh
+SET AD_THREE = 1
+WHERE PAT_ID IN 
+    (
+        SELECT DISTINCT PAT_ID
+        FROM js_xdr_walling_AD_POLST
+        WHERE AD_THREE = 1
+    );
+COMMIT;
+
+
+ALTER TABLE js_xdr_walling_final_pat_coh ADD POLST_THREE NUMBER;
+UPDATE js_xdr_walling_final_pat_coh
+SET POLST_THREE = 1
+WHERE PAT_ID IN 
+    (
+        SELECT DISTINCT PAT_ID
+        FROM js_xdr_walling_AD_POLST
+        WHERE POLST_THREE = 1
     );
 COMMIT;
 
@@ -1308,8 +1340,10 @@ SELECT
         ,MELD 
         ,ESDL_A
         ,ESDL_B
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,COUNT(DISTINCT PAT_ID) 
 FROM js_xdr_walling_final_pat_coh
@@ -1321,8 +1355,10 @@ group by pl_ESDL_decompensation
         ,MELD 
         ,ESDL_A
         ,ESDL_B
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART;
 
 ----------------------------------------------------
@@ -1336,8 +1372,10 @@ select mrn
         ,MELD 
         ,ESDL_A
         ,ESDL_B
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,'PL cirrhosis + [hepatic decompensation (PL or dx)' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
@@ -1368,8 +1406,10 @@ select mrn
         ,MELD 
         ,ESDL_A
         ,ESDL_B
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,'PL cirrhosis or MELD >18' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
@@ -1643,8 +1683,10 @@ SELECT
         ,DX_ADVANCED_CANCER
         ,ONC_VISIT
         ,CHEMO_TIMEFRAME
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,CANCER_A
         ,CANCER_B
@@ -1655,8 +1697,10 @@ group by pl_ADVANCED_CANCER
         ,DX_ADVANCED_CANCER
         ,ONC_VISIT
         ,CHEMO_TIMEFRAME
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,CANCER_A
         ,CANCER_B;
@@ -1668,8 +1712,10 @@ select mrn
         ,DX_ADVANCED_CANCER
         ,ONC_VISIT
         ,CHEMO_TIMEFRAME
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,CANCER_A
         ,CANCER_B
@@ -1699,11 +1745,12 @@ select mrn
         ,DX_ADVANCED_CANCER
         ,ONC_VISIT
         ,CHEMO_TIMEFRAME
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,CANCER_A
-        ,CANCER_B
         ,CANCER_B
         ,'AV(DX) + chemotherapy last two years' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
@@ -1825,8 +1872,10 @@ SELECT
         ,DX_CHF
         ,LVEF
         ,CHF_HOSP
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,CHF_A
         ,CHF_B
@@ -1837,8 +1886,10 @@ group by  PL_CHF
         ,DX_CHF
         ,LVEF
         ,CHF_HOSP
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,CHF_A
         ,CHF_B;
@@ -1851,8 +1902,10 @@ select mrn
         ,DX_CHF
         ,LVEF
         ,CHF_HOSP
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,CHF_A
         ,CHF_B
@@ -1882,8 +1935,10 @@ select mrn
         ,DX_CHF
         ,LVEF
         ,CHF_HOSP
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,CHF_A
         ,CHF_B
@@ -1987,8 +2042,10 @@ SELECT
         ,COPD_HOSP
         ,PL_COPD_SPO2
         ,DX_COPD_SPO2
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
 ,COUNT(DISTINCT PAT_ID) 
 FROM js_xdr_walling_final_pat_coh
@@ -1998,8 +2055,10 @@ group by PL_COPD
         ,COPD_HOSP
         ,PL_COPD_SPO2
         ,DX_COPD_SPO2
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART;
 
 
@@ -2012,8 +2071,10 @@ select mrn
         ,PL_COPD_SPO2
         ,DX_COPD_SPO2
         ,COPD_HOSP
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,'PL and 1 admission with a COPD diagnosis (not necessarily principal)' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
@@ -2067,16 +2128,20 @@ COMMIT;
 SELECT 
         PL_ALS
         ,DX_ALS
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
 ,COUNT(DISTINCT PAT_ID) 
 FROM js_xdr_walling_final_pat_coh
 WHERE ALS = 1
 group by PL_ALS
         ,DX_ALS
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART;
 
 
@@ -2086,8 +2151,10 @@ group by PL_ALS
 select mrn
         ,PL_ALS
         ,DX_ALS
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,'PL and 1 DX' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
@@ -2189,8 +2256,10 @@ SELECT
         PL_ESRD
         ,DX_ESRD
         ,NEPH_VISIT
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
 ,COUNT(DISTINCT PAT_ID) 
 FROM js_xdr_walling_final_pat_coh
@@ -2198,8 +2267,10 @@ WHERE PL_ESRD = 1 OR DX_ESRD = 1
 group by PL_ESRD
         ,DX_ESRD
         ,NEPH_VISIT
-        ,AD
-        ,POLST;
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL;
 
 ----------------------------------------------------
 --Step 11.5  Pull sample for chart review. Export to xlsx file
@@ -2208,8 +2279,10 @@ select mrn
         ,PL_ESRD
         ,DX_ESRD
         ,NEPH_VISIT
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,'[PL = 1 or DX >= 1] and Nephrology visit (inpt or ambulatory) in the past year' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
@@ -2237,8 +2310,10 @@ select mrn
         ,PL_ESRD
         ,DX_ESRD
         ,NEPH_VISIT
-        ,AD
-        ,POLST
+        ,AD_THREE
+        ,AD_ALL
+        ,POLST_THREE
+        ,POLST_ALL
         ,ACTIVE_MYCHART
         ,'[PL = 1 AND DX = 1]' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
