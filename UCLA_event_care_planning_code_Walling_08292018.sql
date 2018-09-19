@@ -1472,9 +1472,9 @@ ALTER TABLE js_xdr_walling_final_pat_coh ADD ONC_VISIT varchar2(25);
 MERGE INTO js_xdr_walling_final_pat_coh coh
 USING
 (select pat_id
-        ,case when MONTHS_BETWEEN(LAST_ENC_DATE,SYSDATE - (365.25 * 2)) < 6 then 'SIX MONTHS'
-              when MONTHS_BETWEEN(LAST_ENC_DATE,SYSDATE - (365.25 * 2)) < 12 then 'ONE YEAR'
-              when MONTHS_BETWEEN(LAST_ENC_DATE,SYSDATE - (365.25 * 2)) BETWEEN 12 AND 24 then 'TWO YEAR'
+        ,case when MONTHS_BETWEEN(SYSDATE,LAST_ENC_DATE) < 6 then 'SIX MONTHS'
+              when MONTHS_BETWEEN((SYSDATE,LAST_ENC_DATE) < 12 then 'ONE YEAR'
+              when MONTHS_BETWEEN((SYSDATE,LAST_ENC_DATE) BETWEEN 12 AND 24 then 'TWO YEAR'
               ELSE 'NO VISIT'
         END ONC_VISIT
         ,LAST_ENC_DATE
@@ -1620,9 +1620,9 @@ ALTER TABLE js_xdr_walling_final_pat_coh ADD CHEMO_TIMEFRAME varchar2(25);
 MERGE INTO js_xdr_walling_final_pat_coh coh
 USING
 (select pat_id
-        ,case when MONTHS_BETWEEN(LAST_ENC_DATE, SYSDATE - (365.25 * 2)) < 6 then 'SIX MONTHS'
-              when MONTHS_BETWEEN(LAST_ENC_DATE, SYSDATE - (365.25 * 2)) < 12 then 'ONE YEAR'
-              when MONTHS_BETWEEN(LAST_ENC_DATE, SYSDATE - (365.25 * 2)) BETWEEN 12 AND 24 then 'TWO YEAR'
+        ,case when MONTHS_BETWEEN(SYSDATE,LAST_ENC_DATE) < 6 then 'SIX MONTHS'
+              when MONTHS_BETWEEN(SYSDATE,LAST_ENC_DATE) < 12 then 'ONE YEAR'
+              when MONTHS_BETWEEN(SYSDATE,LAST_ENC_DATE) BETWEEN 12 AND 24 then 'TWO YEAR'
               ELSE 'NO VISIT'
         END CHEMO_TIMEFRAME
         ,LAST_ENC_DATE
@@ -2189,8 +2189,8 @@ Step 11:    ESRD
 --------------------------------------------------------------
 -- Step 11.1: Pull Nephrology visit (inpt or ambulatory) in the past year
 --------------------------------------------------------------
-DROP TABLE xdr_walling_NEPH PURGE;
-CREATE TABLE xdr_walling_NEPH AS
+DROP TABLE js_xdr_walling_neph PURGE;
+CREATE TABLE js_xdr_walling_neph AS
 SELECT DISTINCT  PAT.PAT_ID
                 ,enc.PAT_ENC_CSN_ID
                 ,enc.EFFECTIVE_DATE_DT
@@ -2226,7 +2226,7 @@ SET NEPH_VISIT = 1
 WHERE
     PAT_ID IN (
                 SELECT DISTINCT PAT_ID
-                FROM xdr_walling_NEPH
+                FROM js_xdr_walling_neph
                 )
 ;      --897
 COMMIT;
