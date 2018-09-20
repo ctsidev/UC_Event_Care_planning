@@ -2315,9 +2315,231 @@ from (
         ORDER BY dbms_random.random)
 WHERE RECORD_ID < 11;
 
-
 /****************************************************************************
-Step 12:     Clean up
+Step 12:     Age Criteria
+            
+****************************************************************************/ 
+--------------------------------------------------------------
+--  Step 12.1:     Create additional flags to calculate criteria aggregated coutns
+--
+--------------------------------------------------------------
+--Flag patients that fit any of the criterion
+ALTER TABLE js_xdr_walling_final_pat_coh ADD ANY_CRITERIA number;
+UPDATE js_xdr_walling_final_pat_coh
+SET ANY_CRITERIA = 1
+WHERE
+        copd = 1
+        OR CHF_A = 1
+        OR CHF_B = 1
+        OR als = 1
+        OR ESDL_A = 1
+        OR ESDL_B = 1
+        OR cancer_a = 1
+        OR cancer_b = 1
+        OR esrd = 1;
+COMMIT;
+
+--create elements for age criteira counts
+ALTER TABLE js_xdr_walling_final_pat_coh ADD PL_AGG number;
+ALTER TABLE js_xdr_walling_final_pat_coh ADD copd_alt number;
+ALTER TABLE js_xdr_walling_final_pat_coh ADD chf_alt number;
+ALTER TABLE js_xdr_walling_final_pat_coh ADD esrd_alt number;
+ALTER TABLE js_xdr_walling_final_pat_coh ADD als_alt number;
+ALTER TABLE js_xdr_walling_final_pat_coh ADD ADVANCED_CANCER_alt number;
+MERGE INTO js_xdr_walling_final_pat_coh coh
+USING 
+(select pat_id
+                --aggregate all the PL diagnosis across conditions.
+                ,pl_copd + pl_chf + PL_ESRD + PL_ALS + PL_ADVANCED_CANCER AS PL_AGG
+                --identify which patients have both type of dx for each condition (PL and encounter)
+                ,case when pl_copd = 1 and dx_copd = 1 then 1 else 0 end copd_alt
+                ,case when pl_chf = 1 and dx_chf = 1 then 1 else 0 end chf_alt
+                ,case when pl_esrd = 1 and dx_esrd = 1 then 1 else 0 end esrd_alt
+                ,case when pl_als = 1 and dx_als = 1 then 1 else 0 end als_alt
+                ,case when PL_ADVANCED_CANCER = 1 and DX_ADVANCED_CANCER = 1 then 1 else 0 end ADVANCED_CANCER_alt
+        from js_xdr_walling_final_pat_coh 
+        where 
+                --age limit (initial cut-off date to gather counts)
+                current_age >= 65
+                --patient not already in one of the criteria (exclude patietns already selected for any of the existing criterion)
+                and ANY_CRITERIA IS NULL) r
+                ON
+                (coh.pat_id = r.pat_id)
+                WHEN MATCHED THEN
+                UPDATE SET PL_AGG = R.PL_AGG
+                ,copd_alt = r.copd_alt
+                ,chf_alt = r.chf_alt
+                ,esrd_alt = r.esrd_alt
+                ,als_alt = r.als_alt
+                ,ADVANCED_CANCER_alt = r.ADVANCED_CANCER_alt;
+commit;
+
+
+-------------------------------------------------------------------
+-- Step 12.2     Pull aggregates records to explore in excel (i e, pivot table) if needed.
+-------------------------------------------------------------------
+select 
+current_age
+,pl_agg
+,(ADVANCED_CANCER_alt + copd_alt + chf_alt + esrd_alt + als_alt) as condition_agg
+,case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end ad_polst_all
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end ad_polst_three
+,count(*) 
+from js_xdr_walling_final_pat_coh
+where 
+        --patient in one of the criteria
+        ANY_CRITERIA is null
+        and current_age >=65
+group by 
+current_age
+,pl_agg
+,(ADVANCED_CANCER_alt + copd_alt + chf_alt + esrd_alt + als_alt)
+,case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end 
+order by current_age
+;
+
+
+-------------------------------------------------------------------
+-- Step 12.3     Pull counts to fill out age criteria exploration sheet
+--               [Total cohort numbers table - Age Criteria.docx]
+-------------------------------------------------------------------
+
+/*-------------------------------------------------------------------
+      Generate counts for report
+
+
+For the total cohort numbers you will have to add the different counts for each group within each criteria
+
+For instance, in the "All current serious illness definitions" section, reuslts from the query are
+1	0	401	All current serious illness definitions 
+1	1	676	All current serious illness definitions 
+0	0	1912	All current serious illness definitions 
+Total cohort numbers: 401 + 676 + 1,912 = 2,989
+ACP ever: 401 + 676 = 1,077
+ACP 3y = 676
+*/-------------------------------------------------------------------
+select 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end ad_polst_all
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end ad_polst_three
+,count(*)
+,'All current serious illness definitions ' as criteria
+from js_xdr_walling_final_pat_coh 
+where 
+        --patient in one of the criteria
+        ANY_CRITERIA = 1
+group by 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end
+
+UNION ALL
+
+select 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end ad_polst_all
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end ad_polst_three
+,count(*) 
+,'2 dx in the problem list if >=65' as criteria
+from js_xdr_walling_final_pat_coh
+where 
+        --patient NOT in one of the criteria
+        ANY_CRITERIA IS NULL
+        AND PL_AGG >= 2
+        and current_age >= 65
+group by 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end 
+
+
+UNION ALL
+
+select 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end ad_polst_all
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end ad_polst_three
+,count(*) 
+,'2 dx in the problem list if >=75 as criteria' as criteria
+from js_xdr_walling_final_pat_coh
+where 
+        --patient NOT in one of the criteria
+        ANY_CRITERIA IS NULL
+        AND PL_AGG >= 2
+        and current_age >= 75
+group by 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end 
+
+
+UNION ALL
+
+select 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end ad_polst_all
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end ad_polst_three
+,count(*) 
+,'2 dx in the problem list AND encounter codes if >=65' as criteria
+from js_xdr_walling_final_pat_coh
+where 
+        --patient NOT in one of the criteria
+        ANY_CRITERIA IS NULL
+        and current_age >= 65
+        and (ADVANCED_CANCER_alt + copd_alt + chf_alt + esrd_alt + als_alt)  >= 2
+group by 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end 
+
+UNION ALL
+
+select 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end ad_polst_all
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end ad_polst_three
+,count(*) 
+,'2 dx in the problem list AND encounter codes if >=75' as criteria
+from js_xdr_walling_final_pat_coh
+where 
+        --patient NOT in one of the criteria
+        ANY_CRITERIA IS NULL
+        AND current_age >= 75
+        and (ADVANCED_CANCER_alt + copd_alt + chf_alt + esrd_alt + als_alt)  >= 2
+group by 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end 
+
+
+UNION ALL
+
+select 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end ad_polst_all
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end ad_polst_three
+,count(*) 
+,'1 dx in the problem list if >=65' as criteria
+from js_xdr_walling_final_pat_coh
+where 
+        --patient NOT in one of the criteria
+        ANY_CRITERIA IS NULL
+        AND PL_AGG >= 1
+        and current_age >= 65
+group by 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end 
+
+
+UNION ALL
+
+select 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end ad_polst_all
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end ad_polst_three
+,count(*) 
+,'1 dx in the problem list if >=75' as criteria
+from js_xdr_walling_final_pat_coh
+where 
+        --patient NOT in one of the criteria
+        ANY_CRITERIA IS NULL
+        AND PL_AGG >= 1
+        and current_age >= 75
+group by 
+case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end
+,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end 
+;
+/****************************************************************************
+Step 13:     Clean up
             
 ****************************************************************************/   
 DROP TABLE js_xdr_walling_IMFP_dept_drv PURGE;
