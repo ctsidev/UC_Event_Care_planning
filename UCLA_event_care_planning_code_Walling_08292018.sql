@@ -416,7 +416,6 @@ select distinct coh.pat_id
       ,0 as PL_COPD_SPO2
       ,0 as PL_CHF
       ,0 as PL_ESRD
-      ,0 as PL_Parkinsons
       ,0 as PL_ALS
       ,0 AS PL_CIRRHOSIS
       ,0 as DX_advanced_cancer
@@ -425,7 +424,6 @@ select distinct coh.pat_id
       ,0 as dx_COPD_SPO2
       ,0 as DX_CHF
       ,0 as DX_ESRD
-      ,0 as DX_Parkinsons
       ,0 as DX_ALS
       ,0 AS DX_CIRRHOSIS
       ,0 AS ANY_PL_DX
@@ -549,16 +547,7 @@ from js_xdr_walling_prob_list_all
 WHERE DX_FLAG = 'ALS'
 );
 commit;
--- 3. Parkinson
-update js_xdr_walling_final_pat_coh
-set PL_parkinsons = 1
-,any_pl_dx = 1
-where pat_id in (select distinct pat_id
-from js_xdr_walling_prob_list_all
-WHERE DX_FLAG = 'PARKINSONS'
-);
-commit;
--- 4. ESRD
+-- 3. ESRD
 update js_xdr_walling_final_pat_coh
 set PL_esrd = 1
 ,any_pl_dx = 1
@@ -567,7 +556,7 @@ from js_xdr_walling_prob_list_all
 WHERE DX_FLAG = 'ESRD'
 );
 commit;
--- 5. COPD
+-- 4. COPD
 update js_xdr_walling_final_pat_coh
 set PL_copd = 1
 ,any_pl_dx = 1
@@ -576,7 +565,7 @@ from js_xdr_walling_prob_list_all
 WHERE DX_FLAG = 'COPD'
 );
 commit;
--- 6. CHF
+-- 5. CHF
 update js_xdr_walling_final_pat_coh
 set PL_CHF = 1
 ,any_pl_dx = 1
@@ -585,7 +574,7 @@ from js_xdr_walling_prob_list_all
 WHERE DX_FLAG = 'CHF'
 );
 commit;
--- 7. CIRROHSIS
+-- 6. CIRROHSIS
 update js_xdr_walling_final_pat_coh
 set PL_CIRRHOSIS = 1
 ,any_pl_dx = 1
@@ -594,7 +583,7 @@ from js_xdr_walling_prob_list_all
 WHERE DX_FLAG = 'CIRRHOSIS'
 );
 commit;
--- 8. COPD_SPO2
+-- 7. COPD_SPO2
 update js_xdr_walling_final_pat_coh
 set PL_COPD_SPO2 = 1
 ,any_pl_dx = 1
@@ -609,7 +598,6 @@ commit;
 select 
 SUM(PL_ADVANCED_CANCER) as PL_ADVANCED_CANCER
 ,SUM(PL_ALS) as PL_ALS
-,SUM(PL_PARKINSONS) as PL_PARKINSONS
 ,SUM(PL_ESRD) as PL_ESRD
 ,SUM(PL_COPD) as PL_COPD
 ,SUM(PL_CHF) as PL_CHF
@@ -680,16 +668,7 @@ from js_xdr_walling_dx_all
 WHERE DX_FLAG = 'ALS'
 );
 commit;
--- 3. Parkinson
-update js_xdr_walling_final_pat_coh
-set DX_parkinsons = 1
-,any_pl_dx = 1
-where pat_id in (select distinct pat_id
-from js_xdr_walling_dx_all
-WHERE DX_FLAG = 'PARKINSONS'
-);
-commit;
--- 4. ESRD
+-- 3. ESRD
 update js_xdr_walling_final_pat_coh
 set DX_esrd = 1
 ,any_pl_dx = 1
@@ -698,7 +677,7 @@ from js_xdr_walling_dx_all
 WHERE DX_FLAG = 'ESRD'
 );
 commit;
--- 5. COPD
+-- 4. COPD
 update js_xdr_walling_final_pat_coh
 set DX_copd = 1
 ,any_pl_dx = 1
@@ -707,7 +686,7 @@ from js_xdr_walling_dx_all
 WHERE DX_FLAG = 'COPD'
 );
 commit;
--- 6. CHF
+-- 5. CHF
 update js_xdr_walling_final_pat_coh
 set DX_CHF = 1
 ,any_pl_dx = 1
@@ -716,7 +695,7 @@ from js_xdr_walling_dx_all
 WHERE DX_FLAG = 'CHF'
 );
 commit;
--- 7. CIRROHSIS
+-- 6. CIRROHSIS
 update js_xdr_walling_final_pat_coh
 set DX_CIRRHOSIS = 1
 ,any_pl_dx = 1
@@ -725,7 +704,7 @@ from js_xdr_walling_dx_all
 WHERE DX_FLAG = 'CIRRHOSIS'
 );
 commit;
--- 8. COPD_SPO2
+-- 7. COPD_SPO2
 update js_xdr_walling_final_pat_coh
 set DX_COPD_SPO2 = 1
 ,any_pl_dx = 1
