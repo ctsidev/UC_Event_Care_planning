@@ -2408,7 +2408,6 @@ order by current_age
 /*-------------------------------------------------------------------
       Generate counts for report
 
-
 For the total cohort numbers you will have to add the different counts for each group within each criteria
 
 For instance, in the "All current serious illness definitions" section, reuslts from the query are
@@ -2538,6 +2537,18 @@ group by
 case when AD_ALL = 1 or POLST_ALL = 1 then 1 else 0 end
 ,case when AD_THREE = 1 or POLST_THREE = 1 then 1 else 0 end 
 ;
+-------------------------------------------------------------------
+-- Step 12.4     Create Age Criteria flag for '1 dx in the problem list if >=75' as criteria
+-------------------------------------------------------------------
+ALTER TABLE js_xdr_walling_final_pat_coh ADD AGE_CRITERIA NUMBER;
+UPDATE js_xdr_walling_final_pat_coh
+SET AGE_CRITERIA = 1
+WHERE 
+        ANY_CRITERIA IS NULL
+        AND PL_AGG >= 1
+        and current_age >= 75;
+COMMIT;
+
 /****************************************************************************
 Step 13:     gather comprehensive counts across all criterion
             
@@ -2810,6 +2821,77 @@ CASE WHEN AD_THREE = 1 OR POLST_THREE = 1 THEN 'AD_POLST_THREE_OR_LESS'
 END
 ))
 GROUP BY CRITERIA
+
+UNION ALL
+
+select
+criteria
+,sum(AD_POLST_NEVER) as AD_POLST_NEVER
+,sum(AD_POLST_MORE_THAN_THREE) as AD_POLST_MORE_THAN_THREE
+,sum(AD_POLST_THREE_OR_LESS) as AD_POLST_THREE_OR_LESS
+,SUM(TOTAL_PATIENTS) AS TOTAL_PATIENTS
+FROM (
+SELECT
+CRITERIA
+,case when AD_POLST = 'AD_POLST_NEVER' then TOTAL_PATIENTS end AD_POLST_NEVER
+,case when AD_POLST = 'AD_POLST_MORE_THAN_THREE' then TOTAL_PATIENTS end AD_POLST_MORE_THAN_THREE
+,case when AD_POLST = 'AD_POLST_THREE_OR_LESS' then TOTAL_PATIENTS end AD_POLST_THREE_OR_LESS
+,TOTAL_PATIENTS
+FROM(
+select 
+'AGE_CRITERIA' AS CRITERIA
+,CASE WHEN AD_THREE = 1 OR POLST_THREE = 1 THEN 'AD_POLST_THREE_OR_LESS'
+      WHEN AD_ALL = 1 OR POLST_ALL = 1 THEN 'AD_POLST_MORE_THAN_THREE'
+      ELSE 'AD_POLST_NEVER'
+END AD_POLST
+,SUM(AGE_CRITERIA) as TOTAL_PATIENTS
+from js_xdr_walling_final_pat_coh
+where 
+        --patient NOT in one of the criteria
+        AGE_CRITERIA = 1
+GROUP BY 
+CASE WHEN AD_THREE = 1 OR POLST_THREE = 1 THEN 'AD_POLST_THREE_OR_LESS'
+      WHEN AD_ALL = 1 OR POLST_ALL = 1 THEN 'AD_POLST_MORE_THAN_THREE'
+      ELSE 'AD_POLST_NEVER'
+END
+))
+GROUP BY CRITERIA
+
+UNION ALL
+
+select
+criteria
+,sum(AD_POLST_NEVER) as AD_POLST_NEVER
+,sum(AD_POLST_MORE_THAN_THREE) as AD_POLST_MORE_THAN_THREE
+,sum(AD_POLST_THREE_OR_LESS) as AD_POLST_THREE_OR_LESS
+,SUM(TOTAL_PATIENTS) AS TOTAL_PATIENTS
+FROM (
+SELECT
+CRITERIA
+,case when AD_POLST = 'AD_POLST_NEVER' then TOTAL_PATIENTS end AD_POLST_NEVER
+,case when AD_POLST = 'AD_POLST_MORE_THAN_THREE' then TOTAL_PATIENTS end AD_POLST_MORE_THAN_THREE
+,case when AD_POLST = 'AD_POLST_THREE_OR_LESS' then TOTAL_PATIENTS end AD_POLST_THREE_OR_LESS
+,TOTAL_PATIENTS
+FROM(
+select 
+'ALL_SELECTED' AS CRITERIA
+,CASE WHEN AD_THREE = 1 OR POLST_THREE = 1 THEN 'AD_POLST_THREE_OR_LESS'
+      WHEN AD_ALL = 1 OR POLST_ALL = 1 THEN 'AD_POLST_MORE_THAN_THREE'
+      ELSE 'AD_POLST_NEVER'
+END AD_POLST
+,SUM(AGE_CRITERIA) + SUM(ANY_CRITERIA) as TOTAL_PATIENTS
+from js_xdr_walling_final_pat_coh
+where 
+        --patient NOT in one of the criteria
+        AGE_CRITERIA = 1
+        OR ANY_CRITERIA = 1
+GROUP BY 
+CASE WHEN AD_THREE = 1 OR POLST_THREE = 1 THEN 'AD_POLST_THREE_OR_LESS'
+      WHEN AD_ALL = 1 OR POLST_ALL = 1 THEN 'AD_POLST_MORE_THAN_THREE'
+      ELSE 'AD_POLST_NEVER'
+END
+))
+GROUP BY CRITERIA;
 
 ;
 
