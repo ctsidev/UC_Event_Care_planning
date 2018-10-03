@@ -254,19 +254,19 @@ from js_xdr_WALLING_DX_LOOKUP_TEMP
 group by DX_FLAG;
 
 /*
-COPD	14
-PERITONITIS	13
-HEPATORENAL	2
-CHF	34
-ESRD	17
-COPD_SPO2	10
-CIRRHOSIS	25
-CANCER	180
-ALS	2
-PARKINSONS	3
-BLEEDING	6
+ALS	        2
+ASCITES	        4
+BLEEDING	7
+CANCER	        180
+CHF	        46
+CIRRHOSIS	50
+COPD	        14
+COPD_SPO2	11
 ENCEPHALOPATHY	3
-ASCITES	4
+ESRD	        23
+HEPATORENAL	2
+PARKINSONS	3
+PERITONITIS	19
 */
 
     --------------------------------------------------------------
@@ -292,19 +292,19 @@ select DX_FLAG
 from js_xdr_WALLING_DX_LOOKUP
 group by DX_FLAG;
 /*
-COPD	618
-PERITONITIS	276
+ALS	        199
+ASCITES	        213
+BLEEDING	86
+CANCER	        13449
+CHF	        5868
+CIRRHOSIS	690
+COPD	        621
+COPD_SPO2	137
+ENCEPHALOPATHY	147
+ESRD	        1995
 HEPATORENAL	38
-CHF	3909
-ESRD	1451
-CIRRHOSIS	359
-COPD_SPO2	123
-CANCER	13346
-PARKINSONS	238
-ALS	214
-BLEEDING	77
-ASCITES	211
-ENCEPHALOPATHY	140
+PARKINSONS	250
+PERITONITIS	411
 */
 
 
@@ -624,25 +624,11 @@ select coh.pat_id
     ,lk.dx_flag
 FROM js_xdr_walling_final_pat_coh   coh
 join pat_enc_dx                     dx on coh.pat_id = dx.pat_id
-join js_xdr_WALLING_DX_LOOKUP       lk on dx.dx_id = lk.dx_id  and lk.icd_type = 9
+join js_xdr_WALLING_DX_LOOKUP       lk on dx.dx_id = lk.dx_id 
 left join pat_enc                   enc on dx.pat_enc_csn_id = enc.pat_enc_csn_id
 left JOIN ZC_DISP_ENC_TYPE          enctype ON enc.enc_type_c = enctype.disp_enc_type_c
-where dx.CONTACT_DATE between sysdate - (365.25 * 3) and '09/30/2015' 
+where dx.CONTACT_DATE between sysdate - (365.25 * 3) and sysdate
     AND enc.enc_type_c = 101          --"Office Visit"
-union
-select
-    coh.pat_id
-    ,enc.pat_enc_csn_id
-    ,lk.ICD_CODE
-    ,lk.ICD_TYPE
-    ,lk.dx_flag
-FROM js_xdr_walling_final_pat_coh   coh
-join pat_enc_dx                 dx on coh.pat_id = dx.pat_id
-join js_xdr_WALLING_DX_LOOKUP       lk on dx.dx_id = lk.dx_id and lk.icd_type = 10
-left join pat_enc                   enc on dx.pat_enc_csn_id = enc.pat_enc_csn_id
-left JOIN ZC_DISP_ENC_TYPE enctype ON enc.enc_type_c = enctype.disp_enc_type_c
-where dx.CONTACT_DATE between '10/01/2015' and sysdate 
-        AND enc.enc_type_c = 101;         --"Office Visit"
 commit;
 ----------------------------------------------------------------------------
 --Step 4.2:     Update AV Diagnoses flags in cohort table
@@ -1201,7 +1187,7 @@ from(
         )
 );
 
-select count(*), count(distinct pat_id) from js_xdr_WALLING_MELD;--506	506
+select count(*), count(distinct pat_id) from js_xdr_WALLING_MELD;--733	733
 --------------------------------------------------------------
 -- Step 6.5: Create and populate ESLD decompensation variables
 --------------------------------------------------------------
@@ -1443,7 +1429,7 @@ WHERE
     and enc.enc_type_c = 101
     AND enc.EFFECTIVE_DATE_DT between sysdate - (365.25 * 2) AND sysdate
     ; 
-select count(*), count(distinct pat_id) from js_xdr_walling_onc                ;--142982	2076   
+select count(*), count(distinct pat_id) from js_xdr_walling_onc                ;--14300	1240  
 --------------------------------------------------------------
 -- Step 7.2: Classify patients based on the oncology visit threshold
 --------------------------------------------------------------
@@ -1452,8 +1438,8 @@ MERGE INTO js_xdr_walling_final_pat_coh coh
 USING
 (select pat_id
         ,case when MONTHS_BETWEEN(SYSDATE,LAST_ENC_DATE) < 6 then 'SIX MONTHS'
-              when MONTHS_BETWEEN((SYSDATE,LAST_ENC_DATE) < 12 then 'ONE YEAR'
-              when MONTHS_BETWEEN((SYSDATE,LAST_ENC_DATE) BETWEEN 12 AND 24 then 'TWO YEAR'
+              when MONTHS_BETWEEN(SYSDATE,LAST_ENC_DATE) < 12 then 'ONE YEAR'
+              when MONTHS_BETWEEN(SYSDATE,LAST_ENC_DATE) BETWEEN 12 AND 24 then 'TWO YEAR'
               ELSE 'NO VISIT'
         END ONC_VISIT
         ,LAST_ENC_DATE
@@ -1516,7 +1502,7 @@ WHERE
                     ,'96420', '96422', '96425', '96440','96446', '96450')
 AND TRUNC(enc.EFFECTIVE_DATE_DT ) BETWEEN sysdate - (365.25 * 2) AND sysdate
 ;
-select count(*), count(distinct pat_id) from js_xdr_walling_PRC_chemo                ;--13026	720
+select count(*), count(distinct pat_id) from js_xdr_walling_PRC_chemo                ;--11108	588
 
 
 --------------------------------------------------------------
@@ -1589,7 +1575,7 @@ FROM js_xdr_WALLING_med_CHEMO      CHE
 JOIN patient PAT ON CHE.PAT_ID = PAT.PAT_ID
 ;
 
-SELECT COUNT(*),COUNT(DISTINCT PAT_ID) FROM js_xdr_WALLING_CHEMO;      --8635	754
+SELECT COUNT(*),COUNT(DISTINCT PAT_ID) FROM js_xdr_WALLING_CHEMO;      --7575	626
 
 
 --------------------------------------------------------------
@@ -1778,7 +1764,7 @@ WHERE
     (coh.PL_CHF = 1 OR coh.dx_CHF = 1)
     AND dx.contact_date BETWEEN sysdate - 365.25 AND sysdate
 ;
-
+SELECT COUNT(*), COUNT(DISTINCT PAT_ID)  FROM js_xdr_WALLING_CHF_HOSP;      --4832	802
 -------------------------------------------
 --  Step 8.2:    Create and update CHF hospitalization criteria flag
 -------------------------------------------
@@ -1813,7 +1799,7 @@ where
             ,'10','11','12','13','14','15','16','17','18','19','20'
             ,'21','22','23','24','25','26','27','28','29','30','31')
             );
-commit;
+commit;--588 rows updated.
 
 -------------------------------------------
 --  Step 8.5:     Create and update CHF criteria flag
@@ -1831,8 +1817,8 @@ WHERE PAT_ID IN (
                     --Criteria: (PL OR AV(DX)) AND EF < 31
                     (PL_CHF = 1 OR DX_CHF = 1) AND LVEF = 1
                 )
-;--2115
-
+;--586 rows updated.
+COMMIT;
 ALTER TABLE js_xdr_walling_final_pat_coh ADD CHF_B NUMBER;
 UPDATE js_xdr_walling_final_pat_coh
 SET CHF_B = 1
@@ -1842,7 +1828,8 @@ WHERE PAT_ID IN (
                 where
                     --Criteria: (PL) AND CHF admission
                     PL_CHF = 1  AND CHF_HOSP = 1
-                    );--2115
+                    );--713 rows updated.
+COMMIT;                    
 -------------------------------------------
 --  Step 8.6:     calculate counts
 -------------------------------------------
@@ -2188,9 +2175,9 @@ WHERE
             OR
             REGEXP_LIKE(prv.primary_specialty,'Neph','i')
             )
-    AND enc.EFFECTIVE_DATE_DT between sysdate - (365.25) AND sysdate
+    AND enc.EFFECTIVE_DATE_DT between '05/31/2017' AND '05/30/2018'
     ; 
-select count(*), count(distinct pat_id) from js_xdr_walling_neph                ;--13897	1168  
+select count(*), count(distinct pat_id) from js_xdr_walling_neph                ;--10524	580
 
 
 
