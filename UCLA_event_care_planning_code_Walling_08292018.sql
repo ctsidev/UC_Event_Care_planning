@@ -1925,7 +1925,7 @@ from (
         FROM js_xdr_walling_final_pat_coh  coh
         join patient                        pat on coh.pat_id = pat.pat_id
         where
-            CHF_A = 1
+            CHF_B = 1
         ORDER BY dbms_random.random)
 WHERE RECORD_ID < 11
 ;
