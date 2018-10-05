@@ -801,7 +801,7 @@ SET DOC_GROUP = 'AD'
 WHERE 
     DOC_INFO_TYPE_C in ( 
                         '11'        --	Power of Attorney
-                      
+                      ,'300052'	--Advance Directive Enduring
                         ,'10'	    --Advance Directives and Living Will
                         );
 COMMIT;
@@ -1875,7 +1875,7 @@ select mrn
         ,ACTIVE_MYCHART
         ,CHF_A
         ,CHF_B
-        ,'AV(DX) + chemotherapy last two years' as sample_group
+        ,'(PL OR AV(DX)) AND EF < 31' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
         ,NULL as "Advanced condition?"
         ,NULL as "Advanced Illness Group"
@@ -1908,7 +1908,7 @@ select mrn
         ,ACTIVE_MYCHART
         ,CHF_A
         ,CHF_B
-        ,'AV(DX) + chemotherapy last two years' as sample_group
+        ,'(PL) AND CHF admission' as sample_group
         --These are placeholder fields to be filled out by the Investigator reviewing the charts
         ,NULL as "Advanced Illness Group"
         ,NULL as "Advanced condition?"
