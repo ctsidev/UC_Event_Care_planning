@@ -829,7 +829,7 @@ WHERE
     and (bb.RECORD_STATE_C <> 2 OR bb.RECORD_STATE_C IS NULL)-- Deleted
     and (bb.DOC_STAT_C <> 35  OR bb.DOC_STAT_C IS NULL)-- Error
     and bb.DOC_REVOK_DT is null
-    and bb.DOC_EXPIR_TIME is null
+--     and bb.DOC_EXPIR_TIME is null
     ;
 
 -------------------------------------------
