@@ -14,6 +14,16 @@ exec P_ACP_PL_DX('xdr_acp_cohort','BLEEDING');
 exec P_ACP_PL_DX('xdr_acp_cohort','ASCITES');
 exec P_ACP_PL_DX('xdr_acp_cohort','ENCEPHALOPATHY');
 exec P_ACP_ESDL_DECOMPENSATION('xdr_acp_cohort');
+exec P_ACP_ENC_DX('xdr_acp_cohort','CANCER');
+exec P_ACP_ENC_DX('xdr_acp_cohort','CHF');
+exec P_ACP_ENC_DX('xdr_acp_cohort','ALS');
+exec P_ACP_ENC_DX('xdr_acp_cohort','CIRRHOSIS');
+exec P_ACP_ENC_DX('xdr_acp_cohort','ESRD');
+exec P_ACP_DEPT_VISIT('xdr_acp_cohort','ONC',1,'CANCER');
+exec P_ACP_DEPT_VISIT('xdr_acp_cohort','NEPH',1,'ESRD');
+exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'CHF');
+exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'COPD');
+
 
 
 
@@ -115,5 +125,70 @@ begin
         OR PL_ENCEPHALOPATHY = 1 
         OR PL_HEPATORENAL = 1 
         OR PL_PERITONITIS = 1';
+ EXECUTE IMMEDIATE q1;
+end;
+
+
+create or replace procedure P_ACP_ENC_DX(p_table_name in varchar2, p_dx_flag in varchar2) as
+ q1 varchar2(4000);
+begin
+
+ q1 := 'UPDATE ' || p_table_name  || ' 
+  SET DX_' || p_dx_flag || ' = 1 
+  WHERE 
+    PAT_ID IN ( 
+                SELECT DISTINCT coh.pat_id 
+                FROM ' || p_table_name  || '          coh 
+                JOIN pat_enc_dx                     dx on coh.pat_id = dx.pat_id 
+                JOIN JSANZ.js_xdr_WALLING_DX_LOOKUP   drv   ON dx.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || ''' 
+                left join pat_enc                   enc on dx.pat_enc_csn_id = enc.pat_enc_csn_id 
+                WHERE 
+                    dx.CONTACT_DATE between sysdate - (365.25 * 3) and sysdate 
+                    AND enc.enc_type_c = 101)';
+EXECUTE IMMEDIATE q1;
+end;
+
+
+create or replace procedure P_ACP_DEPT_VISIT(p_table_name in varchar2, p_dept in varchar2, p_years in number, p_criteria in varchar2) as
+ q1 varchar2(4000);
+begin
+ q1 := 'UPDATE ' || p_table_name  || ' 
+  SET ' || p_dept || '_VISIT = 1  
+  WHERE  
+    PAT_ID IN ( 
+                SELECT DISTINCT  coh.PAT_ID 
+FROM ' || p_table_name  || '          coh 
+JOIN clarity.PAT_ENC                            enc on coh.pat_id = enc.pat_id 
+LEFT JOIN clarity.CLARITY_DEP                   dep ON enc.department_id = dep.department_id 
+LEFT JOIN clarity.v_cube_d_provider             prv ON enc.visit_prov_id = prv.provider_id 
+WHERE 
+    (coh.PL_' || p_criteria || ' = 1 OR coh.DX_' || p_criteria || ' = 1) 
+    AND 
+            (REGEXP_LIKE(dep.specialty,''' || p_dept || ''',''i'') 
+            OR 
+            REGEXP_LIKE(prv.primary_specialty,''' || p_dept || ''',''i'') 
+            ) 
+    and enc.enc_type_c = 101 
+    AND enc.EFFECTIVE_DATE_DT between sysdate - (365.25 * '|| p_years ||' ) AND sysdate
+    )';
+ EXECUTE IMMEDIATE q1;
+end;
+
+
+create or replace procedure P_ACP_DEPT_ADMIT(p_table_name in varchar2, p_years in number, p_criteria in varchar2) as
+ q1 varchar2(4000);
+begin
+ q1 := 'UPDATE ' || p_table_name  || ' 
+  SET ''' || p_criteria || '''_ADMIT = 1 
+  WHERE 
+    PAT_ID IN (
+                SELECT DISTINCT  PAT.PAT_ID 
+                FROM ' || p_table_name  || '          coh 
+                JOIN pat_enc_hsp                     enc ON coh.pat_id = enc.pat_id 
+                JOIN pat_enc_dx                      dx ON enc.pat_enc_csn_id = dx.pat_enc_csn_id 
+                join JSANZ.js_xdr_walling_dx_lookup  drv on dx.dx_id = drv.dx_id AND drv.DX_FLAG = ''' || p_criteria || ''' 
+                WHERE 
+                    (coh.PL_' || p_criteria || ' = 1 OR COH.DX_' || p_criteria || ' = 1) 
+                    AND dx.contact_date between sysdate - (365.25 * '|| p_years ||' ) AND sysdate)';
  EXECUTE IMMEDIATE q1;
 end;
