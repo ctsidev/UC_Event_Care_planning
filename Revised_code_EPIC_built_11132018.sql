@@ -1,6 +1,9 @@
+-- Create denominator
 exec P_ACP_CREATE_DENOMINATOR('xdr_acp_cohort');
+--remove excluded patients
 exec P_ACP_REMOVE_DECEASED('xdr_acp_cohort');
 exec P_ACP_REMOVE_RESTRICTED('xdr_acp_cohort');
+--apply problem list dx criterion
 exec P_ACP_PL_DX('xdr_acp_cohort','CANCER');
 exec P_ACP_PL_DX('xdr_acp_cohort','CHF');
 exec P_ACP_PL_DX('xdr_acp_cohort','ALS');
@@ -14,19 +17,23 @@ exec P_ACP_PL_DX('xdr_acp_cohort','BLEEDING');
 exec P_ACP_PL_DX('xdr_acp_cohort','ASCITES');
 exec P_ACP_PL_DX('xdr_acp_cohort','ENCEPHALOPATHY');
 exec P_ACP_ESDL_DECOMPENSATION('xdr_acp_cohort');
+--apply encounter dx criterion (3 years)
 exec P_ACP_ENC_DX('xdr_acp_cohort','CANCER');
 exec P_ACP_ENC_DX('xdr_acp_cohort','CHF');
 exec P_ACP_ENC_DX('xdr_acp_cohort','ALS');
 exec P_ACP_ENC_DX('xdr_acp_cohort','CIRRHOSIS');
 exec P_ACP_ENC_DX('xdr_acp_cohort','ESRD');
+--apply visit to departments criterion (oncology and nephrology)
 exec P_ACP_DEPT_VISIT('xdr_acp_cohort','ONC',1,'CANCER');
 exec P_ACP_DEPT_VISIT('xdr_acp_cohort','NEPH',1,'ESRD');
+--apply admision for certain conditions (CHF AND COPD)
 exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'CHF');
 exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'COPD');
 
 
 
 
+-- Create denominator
 create or replace procedure p_acp_create_denominator(p_table_name in varchar2) as
  q1 varchar2(4000);
 begin
@@ -54,7 +61,7 @@ begin
 end;
 
 
-
+--remove excluded patients (DECEASED)
 create or replace procedure p_acp_remove_deceased(p_table_name in varchar2) as
  q1 varchar2(4000);
 begin
@@ -69,8 +76,7 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
-
-
+--remove excluded patients (RESTRICTED)
 create or replace procedure p_acp_remove_restricted(p_table_name in varchar2) as
  q1 varchar2(4000);
 begin
@@ -90,7 +96,7 @@ begin
 end;
 
 
-
+--apply problem list dx criterion
 create or replace procedure P_ACP_PL_DX(p_table_name in varchar2, p_dx_flag in varchar2) as
  q1 varchar2(4000);
 begin
@@ -110,7 +116,7 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
-
+--apply problem list dx criteria for ESDL decompensation combination
 create or replace procedure P_ACP_ESDL_DECOMPENSATION(p_table_name in varchar2) as
  q1 varchar2(4000);
 begin
@@ -128,7 +134,7 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
-
+--apply encounter dx criterion (3 years)
 create or replace procedure P_ACP_ENC_DX(p_table_name in varchar2, p_dx_flag in varchar2) as
  q1 varchar2(4000);
 begin
@@ -148,7 +154,7 @@ begin
 EXECUTE IMMEDIATE q1;
 end;
 
-
+--apply visit to departments criterion (oncology and nephrology)
 create or replace procedure P_ACP_DEPT_VISIT(p_table_name in varchar2, p_dept in varchar2, p_years in number, p_criteria in varchar2) as
  q1 varchar2(4000);
 begin
@@ -174,21 +180,22 @@ WHERE
  EXECUTE IMMEDIATE q1;
 end;
 
-
+--apply admision for certain conditions (CHF AND COPD)
 create or replace procedure P_ACP_DEPT_ADMIT(p_table_name in varchar2, p_years in number, p_criteria in varchar2) as
  q1 varchar2(4000);
 begin
  q1 := 'UPDATE ' || p_table_name  || ' 
-  SET ''' || p_criteria || '''_ADMIT = 1 
+  SET ' || p_criteria || '_ADMIT = 1 
   WHERE 
-    PAT_ID IN (
-                SELECT DISTINCT  PAT.PAT_ID 
+    PAT_ID IN ( 
+                SELECT DISTINCT  coh.PAT_ID 
                 FROM ' || p_table_name  || '          coh 
                 JOIN pat_enc_hsp                     enc ON coh.pat_id = enc.pat_id 
                 JOIN pat_enc_dx                      dx ON enc.pat_enc_csn_id = dx.pat_enc_csn_id 
                 join JSANZ.js_xdr_walling_dx_lookup  drv on dx.dx_id = drv.dx_id AND drv.DX_FLAG = ''' || p_criteria || ''' 
                 WHERE 
                     (coh.PL_' || p_criteria || ' = 1 OR COH.DX_' || p_criteria || ' = 1) 
-                    AND dx.contact_date between sysdate - (365.25 * '|| p_years ||' ) AND sysdate)';
+                    AND dx.contact_date between sysdate - (365.25 * '|| p_years ||' ) AND sysdate
+                    )';
  EXECUTE IMMEDIATE q1;
 end;
