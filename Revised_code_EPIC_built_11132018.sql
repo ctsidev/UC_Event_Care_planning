@@ -22,6 +22,12 @@
 	"DX_CHF" NUMBER, 
 	"DX_ESRD" NUMBER, 
 	"DX_CIRRHOSIS" NUMBER, 
+    "DX_PERITONITIS" NUMBER, 
+    "DX_ASCITES" NUMBER, 
+    "DX_BLEEDING" NUMBER, 
+    "DX_ENCEPHALOPATHY" NUMBER, 
+    "DX_HEPATORENAL" NUMBER, 
+    "DX_ESDL_DECOMPENSATION" NUMBER, 
 	"NEPH_VISIT" NUMBER, 
 	"ONC_VISIT" NUMBER, 
 	"COPD_ADMIT" NUMBER, 
@@ -623,13 +629,19 @@ exec P_ACP_PL_DX('xdr_acp_cohort','HEPATORENAL');
 exec P_ACP_PL_DX('xdr_acp_cohort','BLEEDING');
 exec P_ACP_PL_DX('xdr_acp_cohort','ASCITES');
 exec P_ACP_PL_DX('xdr_acp_cohort','ENCEPHALOPATHY');
-exec P_ACP_ESDL_DECOMPENSATION('xdr_acp_cohort');
+exec P_ACP_PL_ESDL_DECOMPENSATION('xdr_acp_cohort');
 --apply encounter dx criterion (3 years)
 exec P_ACP_ENC_DX('xdr_acp_cohort','CANCER');
 exec P_ACP_ENC_DX('xdr_acp_cohort','CHF');
 exec P_ACP_ENC_DX('xdr_acp_cohort','ALS');
 exec P_ACP_ENC_DX('xdr_acp_cohort','CIRRHOSIS');
 exec P_ACP_ENC_DX('xdr_acp_cohort','ESRD');
+exec P_ACP_ENC_DX('xdr_acp_cohort','PERITONITIS');
+exec P_ACP_ENC_DX('xdr_acp_cohort','ASCITES');
+exec P_ACP_ENC_DX('xdr_acp_cohort','BLEEDING');
+exec P_ACP_ENC_DX('xdr_acp_cohort','ENCEPHALOPATHY');
+exec P_ACP_ENC_DX('xdr_acp_cohort','HEPATORENAL');
+EXEC P_ACP_DX_ESDL_DECOMPENSATION('xdr_acp_cohort');
 --apply visit to departments criterion (oncology and nephrology)
 exec P_ACP_DEPT_VISIT('xdr_acp_cohort','ONC',1,'CANCER');
 exec P_ACP_DEPT_VISIT('xdr_acp_cohort','NEPH',1,'ESRD');
@@ -641,6 +653,11 @@ exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'COPD');
 exec P_ACP_LAB_PULL('xdr_acp_cohort');
 
 -- EJECTION FRACTION
+
+--chemotherapy
+exec P_ACP_CHEMO_MEDS('xdr_acp_cohort','CHEMO',2);
+exec P_ACP_CHEMO_PROC('xdr_acp_cohort','XDR_ACP_CHEMO_CPT',2);
+
 -- Merge criterion
 -- Age criteria
 -- finalize selection
@@ -654,8 +671,10 @@ begin
 
  q1 := 'INSERT INTO ' || p_cohort_table  || '(PAT_ID,CREATION_DATE)  
         SELECT DISTINCT x.pat_id
+                    ,FLOOR(MONTHS_BETWEEN(TRUNC(sysdate),TRUNC(PAT.BIRTH_DATE))/12) AS CURRENT_AGE
             ,SYSDATE AS CREATION_DATE
         FROM (SELECT enc.pat_id
+                    ,PAT.BIRTH_DATE
             ,count(enc.pat_enc_csn_id) AS pat_enc_count
         FROM clarity.pat_enc                        enc
         JOIN clarity.patient                        pat   ON enc.pat_id = pat.pat_id
@@ -669,7 +688,8 @@ begin
                 and floor(months_between(TRUNC(sysdate), pat.birth_date)/12) >= 18
                 and enc.enc_type_c = 101
                 and (enc.appt_status_c is not null and enc.appt_status_c not in (3,4,5))
-                GROUP BY enc.PAT_ID)x
+                GROUP BY enc.PAT_ID,
+                    PAT.BIRTH_DATE)x
         WHERE x.pat_enc_count > 1';
  EXECUTE IMMEDIATE q1;
 end;
@@ -731,7 +751,7 @@ begin
 end;
 
 --apply problem list dx criteria for ESDL decompensation combination
-create or replace procedure P_ACP_ESDL_DECOMPENSATION(p_cohort_table in varchar2) as
+create or replace procedure P_ACP_PL_ESDL_DECOMPENSATION(p_cohort_table in varchar2) as
  q1 varchar2(4000);
 begin
 
@@ -767,6 +787,27 @@ begin
                     AND enc.enc_type_c = 101)';
 EXECUTE IMMEDIATE q1;
 end;
+
+
+--apply problem list dx criteria for ESDL decompensation combination
+create or replace procedure P_ACP_DX_ESDL_DECOMPENSATION(p_cohort_table in varchar2) as
+ q1 varchar2(4000);
+begin
+
+ q1 := '
+  UPDATE ' || p_cohort_table  || 
+  ' SET DX_ESDL_decompensation = 1 
+  WHERE  
+        DX_PERITONITIS = 1 
+        OR DX_ASCITES = 1 
+        OR DX_BLEEDING = 1 
+        OR DX_ENCEPHALOPATHY = 1 
+        OR DX_HEPATORENAL = 1 
+        OR DX_PERITONITIS = 1';
+ EXECUTE IMMEDIATE q1;
+end;
+
+
 
 --apply visit to departments criterion (oncology and nephrology)
 create or replace procedure P_ACP_DEPT_VISIT(p_cohort_table in varchar2, p_dept in varchar2, p_years in number, p_criteria in varchar2) as
@@ -815,7 +856,7 @@ begin
 end;
 
 
--- MELD
+-- MELD: pull labs
 create or replace procedure P_ACP_LAB_PULL(p_cohort_table in varchar2) as
  q1 varchar2(4000);
  q2 varchar2(4000);
@@ -863,6 +904,9 @@ EXECUTE IMMEDIATE q1;
 EXECUTE IMMEDIATE q2;
 end;
 
+-- MELD: processed labs
+
+-- MELD: apply MELD criteria
 
 
 --Chemotherapy
@@ -899,10 +943,141 @@ EXECUTE IMMEDIATE q1;
 EXECUTE IMMEDIATE 'COMMIT';  
 end;
 
+create or replace procedure P_ACP_CHEMO_MEDS(p_cohort_table in varchar2, p_med_keyword  in varchar2, p_timeframe in number) as
+ q1 varchar2(4000);
 
+begin
+ q1 := 'UPDATE ' || p_cohort_table  || ' 
+  SET CHEMO = 1  
+  WHERE  
+    PAT_ID IN (      
+        SELECT DISTINCT  med1.pat_id
+FROM (
+        SELECT  m.pat_id,
+            m.order_med_id, 
+          case when m.medication_id != 800001 then m.medication_id
+               else coalesce(omi.dispensable_med_id, m.user_sel_med_id) end as used_med_id,        
+            zom.name as ordering_mode,
+            zoc.name as order_class
+        FROM ' || p_cohort_table  || '      coh
+        JOIN order_med                      m   ON coh.pat_id = m.pat_id
+        LEFT JOIN order_medinfo omi on m.order_med_id = omi.order_med_id
+        left join zc_order_class zoc on m.order_class_C = zoc.order_class_c
+        left join zc_ordering_mode zom on m.ordering_mode_c = zom.ordering_mode_c
+        WHERE 
+            (coh.PL_ADVANCED_CANCER = 1 OR COH.DX_ADVANCED_CANCER = 1)
+            AND TRUNC(m.ordering_date) BETWEEN sysdate - (365.25 * ' || p_timeframe ||') AND sysdate
+            and zoc.name <> ''Historical Med''
+    ) med1
+LEFT JOIN clarity_medication cm on med1.used_med_id = cm.medication_id
+LEFT JOIN mar_admin_info  mar   ON med1.order_med_id = mar.order_med_id
+LEFT JOIN zc_mar_rslt     xmrs  ON mar.mar_action_c = xmrs.result_c
+
+WHERE 
+  (
+  (med1.ordering_mode = ''Inpatient''                                       
+            AND nvl(mar.taken_time,to_date(''01/01/0001'')) <> ''01/01/0001''       -- taken_time was valid
+            AND nvl(mar.sig,-1) > 0                                             -- and SIG was valid and > 0
+            AND nvl(mar.mar_action_c,-1) <> 125                                 -- and action was anything other than ''Not Given''
+         ) 
+         OR med1.ordering_mode != ''Inpatient''
+        )
+    AND med1.used_med_id IS NOT NULL
+    AND (
+        cm.pharm_subclass_c in (2150) 
+        or regexp_like(cm.name,''' || p_med_keyword || ''',''i'')
+        or regexp_like(cm.generic_name,''' || p_med_keyword || ''',''i'')
+    )';
+
+
+EXECUTE IMMEDIATE q1; 
+EXECUTE IMMEDIATE 'COMMIT';  
+end;
 
 
 -- EJECTION FRACTION
 -- Merge criterion
+create or replace procedure P_ACP_CHEMO_MEDS(p_cohort_table in varchar2) as
+ q1 varchar2(4000);
+
+begin
+ q1 := 'UPDATE ' || p_cohort_table  || ' 
+  SET ALS = 1  ,SELECTED = 1 
+  WHERE  
+    (PL_ALS = 1 OR DX_ALS = 1)';
+
+ q2 := 'UPDATE ' || p_cohort_table  || ' 
+  SET CANCER = 1  ,SELECTED = 1 
+  WHERE  
+    (PL_CANCER = 1 AND ONC_VISIT = 1)
+    OR
+    (DX_CANCER = 1 AND CHEMO = 1)
+    '
+    ;
+
+
+q3 := 'UPDATE ' || p_cohort_table  || ' 
+  SET CHF = 1 ,SELECTED = 1 
+  WHERE  
+        ((PL_CHF = 1 OR DX_CHF = 1) AND LVEF = 1)
+        OR
+        (PL_CHF = 1  AND CHF_ADMIT = 1)'
+    ;
+
+q4 := 'UPDATE ' || p_cohort_table  || ' 
+  SET COPD = 1  ,SELECTED = 1 
+  WHERE  
+        (PL_COPD = 1 AND COPD_ADMIT = 1)'
+    ;
+
+q5 := 'UPDATE ' || p_cohort_table  || ' 
+  SET ESLD = 1 ,SELECTED = 1  
+  WHERE  
+        PL_CIRROHSIS = 1 
+        AND 
+        (PL_ESDL_DECOMPENSATION = 1
+        OR dx_ESDL_decompensation = 1
+        OR MELD = 1)'
+    ;
+
+q6 := 'UPDATE ' || p_cohort_table  || ' 
+  SET ESRD = 1 ,SELECTED = 1 
+  WHERE  
+        (
+            (PL_ESRD = 1 OR DX_ESRD = 1 )
+        AND NEPH_VISIT = 1
+        )
+        OR
+        (PL_ESRD = 1 AND DX_ESRD = 1 )'
+    ;
+EXECUTE IMMEDIATE q1; 
+EXECUTE IMMEDIATE 'COMMIT';  
+EXECUTE IMMEDIATE q2; 
+EXECUTE IMMEDIATE 'COMMIT';  
+EXECUTE IMMEDIATE q3; 
+EXECUTE IMMEDIATE 'COMMIT';  
+EXECUTE IMMEDIATE q4; 
+EXECUTE IMMEDIATE 'COMMIT'; 
+EXECUTE IMMEDIATE q5; 
+EXECUTE IMMEDIATE 'COMMIT'; 
+EXECUTE IMMEDIATE q6; 
+EXECUTE IMMEDIATE 'COMMIT'; 
+
+end;
 -- Age criteria
+
+create or replace procedure P_ACP_AGE_CRTIERIA(p_table_name in varchar2, p_age_limit in varchar2) as
+ q1 varchar2(4000);
+begin
+
+ q1 := 'UPDATE ' || p_table_name  || ' 
+        SET AGE = 1
+        WHERE 
+            SELECTED IS NULL
+            AND (pl_copd + pl_chf + PL_ESRD + PL_ALS + PL_ADVANCED_CANCER >= 1)
+            and CURRENT_AGE >= ' || p_age_limit || '';
+EXECUTE IMMEDIATE q1;
+end;        
+
+
 -- finalize selection
