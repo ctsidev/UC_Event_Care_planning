@@ -44,7 +44,6 @@
 	"COPD" NUMBER, 
 	"CHF" NUMBER, 
 	"ESRD" NUMBER, 
-	"ALS" NUMBER, 
     "ALS" NUMBER, 
     "AGE" NUMBER
    )
@@ -220,6 +219,7 @@ WHERE DEPARTMENT_ID IN (
 80060,
 80068
 );
+COMMIT;
 
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DX_TEMP(ICD_CODE VARCHAR2(10 BYTE), DX_FLAG VARCHAR2(25 BYTE))
 ON COMMIT PRESERVE ROWS;
@@ -584,13 +584,13 @@ select edg.dx_id
 from XDR_ACP_DX_TEMP      drv
 join edg_current_icd10           edg on drv.icd_CODE = edg.CODE 
 ;
-
+COMMIT;
 
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_PAT_STATUS(appt_status_c NUMBER)
 ON COMMIT PRESERVE ROWS;
-INSERT INTO XDR_ACP_PAT_STATUS VALUES(3);
-INSERT INTO XDR_ACP_PAT_STATUS VALUES(4);
-INSERT INTO XDR_ACP_PAT_STATUS VALUES(5);
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(3);COMMIT;
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(4);COMMIT;
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(5);COMMIT;
 
 --Chemotherapy CPT codes
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_CHEMO_CPT(CPT_CODE VARCHAR2(25 BYTE))
@@ -683,7 +683,7 @@ begin
             ,count(enc.pat_enc_csn_id) AS pat_enc_count
         FROM clarity.pat_enc                        enc
         JOIN clarity.patient                        pat   ON enc.pat_id = pat.pat_id
-        LEFT JOIN ctsi_research.' || p_cohort_table || '  coh   ON pat.pat_id = coh.pat_id and coh.pat_id IS NULL
+        LEFT JOIN ' || p_cohort_table || '  coh   ON pat.pat_id = coh.pat_id and coh.pat_id IS NULL
         JOIN clarity.clarity_ser                    prov2 ON pat.cur_pcp_prov_id = prov2.PROV_ID  
                                                     AND prov2.user_id IS NOT NULL
         JOIN XDR_ACP_DEPT_DRV      dd on enc.department_id = dd.department_id
@@ -715,20 +715,23 @@ begin
 end;
 
 --remove excluded patients (RESTRICTED)
-create or replace procedure p_acp_remove_restricted(p_cohort_table in varchar2) as
+create or replace procedure p_acp_remove_restricted(p_cohort_table in varchar2, p_status_table) as
  q1 varchar2(4000);
 begin
 
  q1 := 'DELETE FROM ' || p_cohort_table  ||
         ' WHERE pat_id IN 
             (
-                SELECT DISTINCT coh.pat_id  
-                FROM xdr_ACP_COHORT                   coh 
-                LEFT JOIN patient_fyi_flags           flags ON coh.pat_id = flags.patient_id 
+                SELECT coh.pat_id  
+                FROM ' || p_cohort_table ||'                   coh 
+                JOIN patient_fyi_flags           flags ON coh.pat_id = flags.patient_id 
+                JOIN ' || p_status_table || '     st   on flags.appt_status_c = st.appt_status_c
+                UNION
+                SELECT coh.pat_id  
+                FROM ' || p_cohort_table ||'                   coh 
                 LEFT JOIN patient_3                         ON coh.pat_id = patient_3.pat_id 
                 WHERE 
-                            (patient_3.is_test_pat_yn = ''Y'' 
-                            OR flags.PAT_FLAG_TYPE_C in (6,8,9,1018,1053))
+                    patient_3.is_test_pat_yn = ''Y'' 
             )';
  EXECUTE IMMEDIATE q1;
 end;
@@ -773,7 +776,7 @@ begin
 end;
 
 --apply encounter dx criterion (3 years)
-create or replace procedure P_ACP_ENC_DX(p_cohort_table in varchar2, p_dx_flag in varchar2) as
+create or replace procedure P_ACP_ENC_DX(p_cohort_table in varchar2, p_driver_table in varchar2, p_dx_flag in varchar2) as
  q1 varchar2(4000);
 begin
 
@@ -784,7 +787,7 @@ begin
                 SELECT DISTINCT coh.pat_id 
                 FROM ' || p_cohort_table  || '          coh 
                 JOIN pat_enc_dx                     dx on coh.pat_id = dx.pat_id 
-                JOIN JSANZ.js_xdr_WALLING_DX_LOOKUP   drv   ON dx.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || ''' 
+                JOIN ' || p_driver_table ||'   drv   ON dx.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || ''' 
                 left join pat_enc                   enc on dx.pat_enc_csn_id = enc.pat_enc_csn_id 
                 WHERE 
                     dx.CONTACT_DATE between sysdate - (365.25 * 3) and sysdate 
@@ -861,23 +864,26 @@ end;
 
 
 -- MELD: pull labs
+
+DROP TABLE XDR_ACP_LAB PURGE;
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_LAB(
+    PAT_ID VARCHAR2(18 BYTE), 
+	PAT_ENC_CSN_ID NUMBER(18,0), 
+	PROC_CODE VARCHAR2(91 BYTE), 
+	COMPONENT_ID NUMBER(18,0), 
+	RESULT_TIME DATE, 
+	LAB_FLAG VARCHAR2(50 BYTE),
+	HARM_NUM_VAL NUMBER
+    ) 
+ ON COMMIT PRESERVE ROWS;
+
+
 create or replace procedure P_ACP_LAB_PULL(p_table_name in varchar2, p_cohort_table in varchar2, p_driver_table  in varchar2, p_timeframe in number) as
  q1 varchar2(4000);
  q2 varchar2(4000);
- q3 varchar2(4000); 
 begin
 
-q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_table_name  || ' ("PAT_ID" VARCHAR2(18 BYTE), 
-	"PAT_ENC_CSN_ID" NUMBER(18,0), 
-	"PROC_CODE" VARCHAR2(91 BYTE), 
-	"COMPONENT_ID" NUMBER(18,0), 
-	"RESULT_TIME" DATE, 
-	"LAB_FLAG" VARCHAR2(50 BYTE),
-	"HARM_NUM_VAL" NUMBER
-    ) 
- ON COMMIT PRESERVE ROWS';
-
- q2 := 'INSERT INTO ' || p_table_name || '(PAT_ID,PAT_ENC_CSN_ID,PROC_CODE,COMPONENT_ID, RESULT_TIME, LAB_FLAG, HARM_NUM_VAL) 
+ q1 := 'INSERT INTO ' || p_table_name || '(PAT_ID,PAT_ENC_CSN_ID,PROC_CODE,COMPONENT_ID, RESULT_TIME, LAB_FLAG, HARM_NUM_VAL) 
      SELECT 	DISTINCT coh.pat_id, 
                 o.pat_enc_csn_id, 
                 p.proc_code, 
@@ -904,13 +910,11 @@ q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_table_name  || ' ("PAT_ID" VARCHAR2(
               AND o.order_proc_id IS NOT NULL 
               AND p.order_time BETWEEN SYSDATE - (365.25 * ' || p_timeframe || ') AND SYSDATE';
 
-q3 := 'CREATE INDEX ' || p_table_name || '_IX_RESULT_FLAG ON ' || p_table_name || '(result_time,LAB_FLAG)';
+q2 := 'CREATE INDEX ' || p_table_name || '_IX_RESULT_FLAG ON ' || p_table_name || '(result_time,LAB_FLAG)';
 
-EXECUTE IMMEDIATE q1; 
-EXECUTE IMMEDIATE 'COMMIT';   
+EXECUTE IMMEDIATE q1;
 EXECUTE IMMEDIATE q2;
-EXECUTE IMMEDIATE 'COMMIT';       
-EXECUTE IMMEDIATE q3;
+
 end;
 
 -- MELD: processed labs
@@ -1262,7 +1266,7 @@ create or replace procedure P_ACP_AGE_CRTIERIA(p_table_name in varchar2, p_age_l
 begin
 
  q1 := 'UPDATE ' || p_table_name  || ' 
-        SET AGE = 1
+        SET AGE = 1, selected = 1
         WHERE 
             SELECTED IS NULL
             AND (pl_copd IS NOT NULL
@@ -1278,11 +1282,11 @@ end;
 -- randomization
 
 
-
---drop tamp tables
+--drop tEmp tables
 DROP TABLE XDR_ACP_DEPT_DRV PURGE;
 DROP TABLE XDR_ACP_DX_TEMP PURGE;
 DROP TABLE XDR_ACP_DX_LOOKUP PURGE;
 DROP TABLE XDR_ACP_PAT_STATUS PURGE;
 DROP TABLE XDR_ACP_CHEMO_CPT PURGE;
-DROP TABLE P_ACP_LAB_PULL PURGE;
+DROP TABLE XDR_ACP_LAB PURGE;
+DROP TABLE XDR_ACP_MELD_TABLE PURGE;
