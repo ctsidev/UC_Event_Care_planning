@@ -648,18 +648,18 @@ exec P_ACP_LAB_PULL('xdr_acp_cohort');
 
 
 -- Create denominator
-create or replace procedure p_acp_create_denominator(p_table_name in varchar2) as
+create or replace procedure p_acp_create_denominator(p_cohort_table in varchar2) as
  q1 varchar2(4000);
 begin
 
- q1 := 'INSERT INTO ' || p_table_name  || '(PAT_ID,CREATION_DATE)  
+ q1 := 'INSERT INTO ' || p_cohort_table  || '(PAT_ID,CREATION_DATE)  
         SELECT DISTINCT x.pat_id
             ,SYSDATE AS CREATION_DATE
         FROM (SELECT enc.pat_id
             ,count(enc.pat_enc_csn_id) AS pat_enc_count
         FROM clarity.pat_enc                        enc
         JOIN clarity.patient                        pat   ON enc.pat_id = pat.pat_id
-        LEFT JOIN ctsi_research.' || p_table_name || '  coh   ON pat.pat_id = coh.pat_id and coh.pat_id IS NULL
+        LEFT JOIN ctsi_research.' || p_cohort_table || '  coh   ON pat.pat_id = coh.pat_id and coh.pat_id IS NULL
         JOIN clarity.clarity_ser                    prov2 ON pat.cur_pcp_prov_id = prov2.PROV_ID  
                                                     AND prov2.user_id IS NOT NULL
         JOIN XDR_ACP_DEPT_DRV      dd on enc.department_id = dd.department_id
@@ -676,14 +676,14 @@ end;
 
 
 --remove excluded patients (DECEASED)
-create or replace procedure p_acp_remove_deceased(p_table_name in varchar2) as
+create or replace procedure p_acp_remove_deceased(p_cohort_table in varchar2) as
  q1 varchar2(4000);
 begin
 
- q1 := 'DELETE FROM ' || p_table_name  ||
+ q1 := 'DELETE FROM ' || p_cohort_table  ||
         ' WHERE pat_id IN 
             (SELECT DISTINCT coh.PAT_ID 
-            FROM ' || p_table_name  || '     coh 
+            FROM ' || p_cohort_table  || '     coh 
             JOIN patient            pat on coh.pat_id = pat.pat_id 
             WHERE 
                 i2b2.f_death(pat.pat_id,2,1)  = ''Known Deceased'')';
@@ -691,11 +691,11 @@ begin
 end;
 
 --remove excluded patients (RESTRICTED)
-create or replace procedure p_acp_remove_restricted(p_table_name in varchar2) as
+create or replace procedure p_acp_remove_restricted(p_cohort_table in varchar2) as
  q1 varchar2(4000);
 begin
 
- q1 := 'DELETE FROM ' || p_table_name  ||
+ q1 := 'DELETE FROM ' || p_cohort_table  ||
         ' WHERE pat_id IN 
             (
                 SELECT DISTINCT coh.pat_id  
@@ -711,17 +711,17 @@ end;
 
 
 --apply problem list dx criterion
-create or replace procedure P_ACP_PL_DX(p_table_name in varchar2, p_dx_flag in varchar2) as
+create or replace procedure P_ACP_PL_DX(p_cohort_table in varchar2, p_dx_flag in varchar2) as
  q1 varchar2(4000);
 begin
 
  q1 := '
-  UPDATE ' || p_table_name  || 
+  UPDATE ' || p_cohort_table  || 
   ' SET PL_' || p_dx_flag || ' = 1
   WHERE 
     PAT_ID IN (
                 SELECT DISTINCT coh.pat_id
-                FROM ' || p_table_name  || '          coh 
+                FROM ' || p_cohort_table  || '          coh 
                 JOIN problem_list                     pl    ON coh.pat_id = pl.pat_id AND pl.rec_archived_yn = ''N'' 
                 JOIN zc_problem_status                zps   ON pl.problem_status_c = zps.problem_status_c 
                 JOIN JSANZ.js_xdr_WALLING_DX_LOOKUP   drv   ON pl.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || '''
@@ -731,12 +731,12 @@ begin
 end;
 
 --apply problem list dx criteria for ESDL decompensation combination
-create or replace procedure P_ACP_ESDL_DECOMPENSATION(p_table_name in varchar2) as
+create or replace procedure P_ACP_ESDL_DECOMPENSATION(p_cohort_table in varchar2) as
  q1 varchar2(4000);
 begin
 
  q1 := '
-  UPDATE ' || p_table_name  || 
+  UPDATE ' || p_cohort_table  || 
   ' SET pl_ESDL_decompensation = 1 
   WHERE  
         PL_PERITONITIS = 1 
@@ -749,16 +749,16 @@ begin
 end;
 
 --apply encounter dx criterion (3 years)
-create or replace procedure P_ACP_ENC_DX(p_table_name in varchar2, p_dx_flag in varchar2) as
+create or replace procedure P_ACP_ENC_DX(p_cohort_table in varchar2, p_dx_flag in varchar2) as
  q1 varchar2(4000);
 begin
 
- q1 := 'UPDATE ' || p_table_name  || ' 
+ q1 := 'UPDATE ' || p_cohort_table  || ' 
   SET DX_' || p_dx_flag || ' = 1 
   WHERE 
     PAT_ID IN ( 
                 SELECT DISTINCT coh.pat_id 
-                FROM ' || p_table_name  || '          coh 
+                FROM ' || p_cohort_table  || '          coh 
                 JOIN pat_enc_dx                     dx on coh.pat_id = dx.pat_id 
                 JOIN JSANZ.js_xdr_WALLING_DX_LOOKUP   drv   ON dx.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || ''' 
                 left join pat_enc                   enc on dx.pat_enc_csn_id = enc.pat_enc_csn_id 
@@ -769,15 +769,15 @@ EXECUTE IMMEDIATE q1;
 end;
 
 --apply visit to departments criterion (oncology and nephrology)
-create or replace procedure P_ACP_DEPT_VISIT(p_table_name in varchar2, p_dept in varchar2, p_years in number, p_criteria in varchar2) as
+create or replace procedure P_ACP_DEPT_VISIT(p_cohort_table in varchar2, p_dept in varchar2, p_years in number, p_criteria in varchar2) as
  q1 varchar2(4000);
 begin
- q1 := 'UPDATE ' || p_table_name  || ' 
+ q1 := 'UPDATE ' || p_cohort_table  || ' 
   SET ' || p_dept || '_VISIT = 1  
   WHERE  
     PAT_ID IN ( 
                 SELECT DISTINCT  coh.PAT_ID 
-FROM ' || p_table_name  || '          coh 
+FROM ' || p_cohort_table  || '          coh 
 JOIN clarity.PAT_ENC                            enc on coh.pat_id = enc.pat_id 
 LEFT JOIN clarity.CLARITY_DEP                   dep ON enc.department_id = dep.department_id 
 LEFT JOIN clarity.v_cube_d_provider             prv ON enc.visit_prov_id = prv.provider_id 
@@ -795,15 +795,15 @@ WHERE
 end;
 
 --apply admision for certain conditions (CHF AND COPD)
-create or replace procedure P_ACP_DEPT_ADMIT(p_table_name in varchar2, p_years in number, p_criteria in varchar2) as
+create or replace procedure P_ACP_DEPT_ADMIT(p_cohort_table in varchar2, p_years in number, p_criteria in varchar2) as
  q1 varchar2(4000);
 begin
- q1 := 'UPDATE ' || p_table_name  || ' 
+ q1 := 'UPDATE ' || p_cohort_table  || ' 
   SET ' || p_criteria || '_ADMIT = 1 
   WHERE 
     PAT_ID IN ( 
                 SELECT DISTINCT  coh.PAT_ID 
-                FROM ' || p_table_name  || '          coh 
+                FROM ' || p_cohort_table  || '          coh 
                 JOIN pat_enc_hsp                     enc ON coh.pat_id = enc.pat_id 
                 JOIN pat_enc_dx                      dx ON enc.pat_enc_csn_id = dx.pat_enc_csn_id 
                 join JSANZ.js_xdr_walling_dx_lookup  drv on dx.dx_id = drv.dx_id AND drv.DX_FLAG = ''' || p_criteria || ''' 
@@ -816,12 +816,12 @@ end;
 
 
 -- MELD
-create or replace procedure P_ACP_LAB_PULL(p_table_name in varchar2) as
+create or replace procedure P_ACP_LAB_PULL(p_cohort_table in varchar2) as
  q1 varchar2(4000);
  q2 varchar2(4000);
 begin
 
-q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_table_name  || ' ("PAT_ID" VARCHAR2(18 BYTE), 
+q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_cohort_table  || ' ("PAT_ID" VARCHAR2(18 BYTE), 
 	"PAT_ENC_CSN_ID" NUMBER(18,0), 
 	"PROC_CODE" VARCHAR2(91 BYTE), 
 	"COMPONENT_ID" NUMBER(18,0), 
@@ -831,7 +831,7 @@ q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_table_name  || ' ("PAT_ID" VARCHAR2(
     ) 
  ON COMMIT PRESERVE ROWS';
 
- q2 := 'INSERT INTO ' || p_table_name || '(PAT_ID,PAT_ENC_CSN_ID,PROC_CODE,COMPONENT_ID, RESULT_TIME, LAB_FLAG, HARM_NUM_VAL) 
+ q2 := 'INSERT INTO ' || p_cohort_table || '(PAT_ID,PAT_ENC_CSN_ID,PROC_CODE,COMPONENT_ID, RESULT_TIME, LAB_FLAG, HARM_NUM_VAL) 
      SELECT 	DISTINCT coh.pat_id, 
                 o.pat_enc_csn_id, 
                 p.proc_code, 
@@ -867,7 +867,41 @@ end;
 
 --Chemotherapy
 
-XDR_ACP_CHEMO_CPT
+create or replace procedure P_ACP_CHEMO_PROC(p_cohort_table in varchar2, p_driver_table  in varchar2, p_timeframe in number) as
+ q1 varchar2(4000);
+
+begin
+ q1 := 'UPDATE ' || p_cohort_table  || ' 
+  SET CHEMO = 1  
+  WHERE  
+    PAT_ID IN (      
+        SELECT coh.pat_id 
+          FROM ' || p_cohort_table  || '           coh 
+          JOIN pat_enc                  enc on coh.pat_id = enc.pat_id 
+          JOIN arpb_transactions                  cpt  ON enc.pat_enc_csn_id = cpt.pat_enc_csn_id  
+          join ' || p_driver_table  || '                  drv on cpt.cpt_code = drv.cpt_code 
+        WHERE 
+            (coh.PL_CANCER = 1 OR COH.DX_CANCER = 1) 
+            AND TRUNC(enc.EFFECTIVE_DATE_DT ) BETWEEN sysdate - (365.25 * ' || p_timeframe || ') AND sysdate 
+        UNION 
+        SELECT coh.pat_id 
+          FROM ' || p_cohort_table  || '          coh 
+          join hsp_account                     acc on coh.pat_id = acc.pat_id  
+          JOIN HSP_TRANSACTIONS                  tx  ON acc.HSP_ACCOUNT_ID = tx.HSP_ACCOUNT_ID  
+          JOIN pat_enc                          enc on tx.pat_enc_csn_id = enc.pat_enc_csn_id 
+          join ' || p_driver_table  || '                  drv on tx.cpt_code = drv.cpt_code 
+        WHERE 
+            (coh.PL_CANCER = 1 OR COH.DX_CANCER = 1) 
+            AND TRUNC(enc.EFFECTIVE_DATE_DT ) BETWEEN sysdate - (365.25 * ' || p_timeframe || ') AND sysdate)';
+
+
+EXECUTE IMMEDIATE q1; 
+EXECUTE IMMEDIATE 'COMMIT';  
+end;
+
+
+
+
 -- EJECTION FRACTION
 -- Merge criterion
 -- Age criteria
