@@ -615,55 +615,56 @@ INSERT INTO XDR_ACP_CHEMO_CPT VALUES(96450);COMMIT;
 
 
 -- Create denominator
-exec P_ACP_CREATE_DENOMINATOR('xdr_acp_cohort');        --117 seconds
+exec P_ACP_CREATE_DENOMINATOR('XDR_ACP_COHORT');        --117 seconds
 --remove excluded patients
-exec P_ACP_REMOVE_DECEASED('xdr_acp_cohort');           --657 seconds
-exec P_ACP_REMOVE_RESTRICTED('xdr_acp_cohort');         -- 5 seconds
+exec P_ACP_REMOVE_DECEASED('XDR_ACP_COHORT');           --657 seconds
+exec P_ACP_REMOVE_RESTRICTED('XDR_ACP_COHORT');         -- 5 seconds
 --apply problem list dx criterion
-exec P_ACP_PL_DX('xdr_acp_cohort','CANCER');            -- 5 seconds
-exec P_ACP_PL_DX('xdr_acp_cohort','CHF');               -- 2 seconds
-exec P_ACP_PL_DX('xdr_acp_cohort','ALS');               -- .7 seconds
-exec P_ACP_PL_DX('xdr_acp_cohort','COPD');               -- 13 seconds
-exec P_ACP_PL_DX('xdr_acp_cohort','COPD_SPO2');               -- 1.3 seconds
-exec P_ACP_PL_DX('xdr_acp_cohort','CIRRHOSIS');               -- 9 seconds
-exec P_ACP_PL_DX('xdr_acp_cohort','ESRD');               --  5 seconds
-exec P_ACP_PL_DX('xdr_acp_cohort','PERITONITIS');               -- 1 seconds
-exec P_ACP_PL_DX('xdr_acp_cohort','HEPATORENAL');               -- .3 seconds
-exec P_ACP_PL_DX('xdr_acp_cohort','BLEEDING');               -- .3 seconds
-exec P_ACP_PL_DX('xdr_acp_cohort','ASCITES');               -- 2 seconds
-exec P_ACP_PL_DX('xdr_acp_cohort','ENCEPHALOPATHY');               -- 1 seconds
-exec P_ACP_PL_ESDL_DECOMPENSATION('xdr_acp_cohort');               -- 0 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','CANCER');            -- 5 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','CHF');               -- 2 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','ALS');               -- .7 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','COPD');               -- 13 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','COPD_SPO2');               -- 1.3 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','CIRRHOSIS');               -- 9 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','ESRD');               --  5 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','PERITONITIS');               -- 1 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','HEPATORENAL');               -- .3 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','BLEEDING');               -- .3 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','ASCITES');               -- 2 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','ENCEPHALOPATHY');               -- 1 seconds
+exec P_ACP_PL_ESDL_DECOMPENSATION('XDR_ACP_COHORT');               -- 0 seconds
 --apply encounter dx criterion (3 years)
-exec P_ACP_ENC_DX('xdr_acp_cohort','CANCER');               -- 284 seconds
-exec P_ACP_ENC_DX('xdr_acp_cohort','CHF');                  -- 150 secnds
-exec P_ACP_ENC_DX('xdr_acp_cohort','ALS');                  -- 4 seconds
-exec P_ACP_ENC_DX('xdr_acp_cohort','CIRRHOSIS');            --103 seconds
-exec P_ACP_ENC_DX('xdr_acp_cohort','ESRD');                 --72 seconds
-exec P_ACP_ENC_DX('xdr_acp_cohort','PERITONITIS');          -- 4 seconds
-exec P_ACP_ENC_DX('xdr_acp_cohort','ASCITES');              --10 seconds
-exec P_ACP_ENC_DX('xdr_acp_cohort','BLEEDING');             --2 seconds
-exec P_ACP_ENC_DX('xdr_acp_cohort','ENCEPHALOPATHY');       --3 seconds
-exec P_ACP_ENC_DX('xdr_acp_cohort','HEPATORENAL');          --.5 seconds
-EXEC P_ACP_DX_ESDL_DECOMPENSATION('xdr_acp_cohort');        --.1 seconds
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','CANCER');               -- 284 seconds
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','CHF');                  -- 150 secnds
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','ALS');                  -- 4 seconds
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','CIRRHOSIS');            --103 seconds
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','ESRD');                 --72 seconds
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','PERITONITIS');          -- 4 seconds
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','ASCITES');              --10 seconds
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','BLEEDING');             --2 seconds
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','ENCEPHALOPATHY');       --3 seconds
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','HEPATORENAL');          --.5 seconds
+EXEC P_ACP_DX_ESDL_DECOMPENSATION('XDR_ACP_COHORT');        --.1 seconds
 --apply visit to departments criterion (oncology and nephrology)
-exec P_ACP_DEPT_VISIT('xdr_acp_cohort','ONC',1,'CANCER');       --110 seconds
-exec P_ACP_DEPT_VISIT('xdr_acp_cohort','NEPH',1,'ESRD');            --8 seconds
+exec P_ACP_DEPT_VISIT('XDR_ACP_COHORT','ONC',1,'CANCER');       --110 seconds
+exec P_ACP_DEPT_VISIT('XDR_ACP_COHORT','NEPH',1,'ESRD');            --8 seconds
 --apply admision for certain conditions (CHF AND COPD)
-exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'CHF');                --50 seconds
-exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'COPD');               --40 seconds
+exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT',1,'CHF');                --50 seconds
+exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT',1,'COPD');               --40 seconds
 --chemotherapy
-exec P_ACP_CHEMO_PROC('xdr_acp_cohort','XDR_ACP_CHEMO_CPT',2);      --568 seconds
-exec P_ACP_CHEMO_MEDS('xdr_acp_cohort','CHEMO',2);                  --260 seconds
+exec P_ACP_CHEMO_PROC('XDR_ACP_COHORT','XDR_ACP_CHEMO_CPT',2);      --568 seconds
+exec P_ACP_CHEMO_MEDS('XDR_ACP_COHORT','CHEMO',2);                  --260 seconds
 
 -- MELD
-exec P_ACP_LAB_PULL('xdr_acp_lab','xdr_acp_cohort','jsanz.xdr_WALLING_LABDRV',3);
-
+exec P_ACP_LAB_PULL('XDR_ACP_LAB','XDR_ACP_COHORT','jsanz.xdr_WALLING_LABDRV',3);
+exec P_ACP_LAB_MELD_TABLE('XDR_ACP_MELD_TABLE');                    --340 seconds
+exec P_ACP_MELD('XDR_ACP_COHORT','XDR_ACP_MELD_TABLE')
 -- EJECTION FRACTION
 
 -- Merge criterion
-exec P_ACP_MERGE_CRITERION('xdr_acp_cohort');               --0.1 seconds
+exec P_ACP_MERGE_CRITERION('XDR_ACP_COHORT');               --0.1 seconds
 -- Age criteria
-exec P_ACP_AGE_CRTIERIA('xdr_acp_cohort','75');             --0.1 seconds
+exec P_ACP_AGE_CRTIERIA('XDR_ACP_COHORT','75');             --0.1 seconds
 -- randomization
 
 
@@ -863,6 +864,7 @@ end;
 create or replace procedure P_ACP_LAB_PULL(p_table_name in varchar2, p_cohort_table in varchar2, p_driver_table  in varchar2, p_timeframe in number) as
  q1 varchar2(4000);
  q2 varchar2(4000);
+ q3 varchar2(4000); 
 begin
 
 q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_table_name  || ' ("PAT_ID" VARCHAR2(18 BYTE), 
@@ -901,17 +903,198 @@ q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_table_name  || ' ("PAT_ID" VARCHAR2(
               AND o.ord_value IS NOT NULL 
               AND o.order_proc_id IS NOT NULL 
               AND p.order_time BETWEEN SYSDATE - (365.25 * ' || p_timeframe || ') AND SYSDATE';
- 
+
+q3 := 'CREATE INDEX ' || p_table_name || '_IX_RESULT_FLAG ON ' || p_table_name || '(result_time,LAB_FLAG)';
+
 EXECUTE IMMEDIATE q1; 
 EXECUTE IMMEDIATE 'COMMIT';   
 EXECUTE IMMEDIATE q2;
-EXECUTE IMMEDIATE 'COMMIT';                    
+EXECUTE IMMEDIATE 'COMMIT';       
+EXECUTE IMMEDIATE q3;
 end;
 
 -- MELD: processed labs
+create or replace procedure P_ACP_LAB_MELD_TABLE(p_cohort_table in varchar2, p_lab_table in varchar2) as
+ q1 varchar2(4000);
+ q2 varchar2(8000);
+
+begin
+
+q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_cohort_table  || ' ("PAT_ID" VARCHAR2(18 BYTE)
+        ,"ALBUMIN" NUMBER
+        ,"ALBUMIN_RESULT_TIME" DATE
+        ,"BILIRUBIN" NUMBER
+        ,"BILIRUBIN_RESULT_TIME" DATE
+        ,"CREATININE" NUMBER
+        ,"CREATININE_RESULT_TIME" DATE
+        ,"INR" NUMBER
+        ,"INR_RESULT_TIME" DATE
+        ,"LATEST_LAB" DATE
+        ,"SODIUM" NUMBER
+        ,"SODIUM_RESULT_TIME" DATE
+    ) 
+ ON COMMIT PRESERVE ROWS';
+
+q2 :=  'INSERT INTO ' || p_cohort_table  || ' (PAT_ID,ALBUMIN,ALBUMIN_RESULT_TIME,BILIRUBIN,BILIRUBIN_RESULT_TIME,CREATININE,CREATININE_RESULT_TIME,INR,INR_RESULT_TIME,LATEST_LAB,SODIUM,SODIUM_RESULT_TIME)
+select pat_id
+        ,ALBUMIN
+        ,ALBUMIN_RESULT_TIME
+        ,BILIRUBIN
+        ,BILIRUBIN_RESULT_TIME
+        ,CREATININE
+        ,CREATININE_RESULT_TIME
+        ,INR
+        ,INR_RESULT_TIME
+        ,LATEST_LAB
+        ,SODIUM
+        ,SODIUM_RESULT_TIME
+from (
+        select pat_id
+                ,ALBUMIN
+                ,ALBUMIN_RESULT_TIME
+                ,MIN(ABS(LATEST_LAB - ALBUMIN_RESULT_TIME)) OVER (partition by pat_id) as last_albumin
+                ,ABS(LATEST_LAB - ALBUMIN_RESULT_TIME) as DIFF_ALBUMIN
+                ,BILIRUBIN
+                ,BILIRUBIN_RESULT_TIME
+                ,CREATININE
+                ,CREATININE_RESULT_TIME
+                ,MIN(ABS(LATEST_LAB - CREATININE_RESULT_TIME)) OVER (partition by pat_id) as last_creatinine
+                ,ABS(LATEST_LAB - CREATININE_RESULT_TIME) as DIFF_CREATININE
+                ,INR
+                ,INR_RESULT_TIME
+                ,MIN(ABS(LATEST_LAB - INR_RESULT_TIME)) OVER (partition by pat_id) as last_inr
+                ,ABS(LATEST_LAB - INR_RESULT_TIME) as DIFF_INR
+                ,LATEST_LAB
+                ,SODIUM
+                ,SODIUM_RESULT_TIME
+                ,MIN(ABS(LATEST_LAB - SODIUM_RESULT_TIME)) OVER (partition by pat_id) as last_sodium
+                ,ABS(LATEST_LAB - SODIUM_RESULT_TIME) as DIFF_SODIUM
+        from (select * from (
+            select DISTINCT x.PAT_ID
+                                ,x.BILIRUBIN
+                                ,x.BILIRUBIN_result_time
+                                ,x.INR
+                                ,x.INR_result_time
+                                ,x.diff_INR
+                                ,x.ALBUMIN
+                                ,x.ALBUMIN_result_time
+                                ,x.diff_ALBUMIN
+                                ,x.CREATININE
+                                ,x.CREATININE_result_time
+                                ,x.diff_creatinine
+                                ,x.SODIUM
+                                ,x.SODIUM_result_time
+                                ,x.diff_SODIUM
+                                ,MAX(x.BILIRUBIN_result_time) OVER (PARTITION BY x.PAT_ID) AS LATEST_LAB
+             from (
+                     SELECT DISTINCT bili.PAT_ID
+                                        ,bili.result_time as BILIRUBIN_result_time
+                                        ,bili.harm_num_val as BILIRUBIN
+                                        ,inr.INR
+                                        ,inr.INR_result_time
+                                        ,ABS(bili.result_time - inr.INR_result_time) as diff_INR
+                                        ,alb.ALBUMIN
+                                        ,alb.ALBUMIN_result_time
+                                        ,ABS(bili.result_time - alb.ALBUMIN_result_time) as diff_ALBUMIN
+                                        ,cr.CREATININE
+                                        ,cr.CREATININE_result_time
+                                        ,ABS(bili.result_time - cr.CREATININE_result_time) as diff_creatinine
+                                        ,sod.SODIUM
+                                        ,sod.SODIUM_result_time
+                                        ,ABS(bili.result_time - sod.SODIUM_result_time) as diff_sodium
+                                    FROM ' || p_lab_table || ' bili
+                                    JOIN (SELECT DISTINCT lab.PAT_ID
+                                                ,lab.result_time as INR_result_time
+                                                ,lab.harm_num_val as INR
+                                            FROM ' || p_lab_table || ' lab
+                                            WHERE LAB.LAB_FLAG = ''INR'' AND lab.harm_num_val <> 9999999) inr on bili.pat_id = inr.pat_id and (bili.result_time - inr.INR_result_time) between -1 and 1
+                                    JOIN (SELECT DISTINCT lab.PAT_ID
+                                                ,lab.result_time as ALBUMIN_result_time
+                                                ,lab.harm_num_val as ALBUMIN
+                                            FROM ' || p_lab_table || ' lab
+                                            WHERE LAB.LAB_FLAG = ''ALBUMIN'' AND lab.harm_num_val <> 9999999) alb on bili.pat_id = alb.pat_id and (bili.result_time - alb.ALBUMIN_result_time) between -1 and 1
+                                    JOIN (SELECT DISTINCT lab.PAT_ID
+                                                ,lab.result_time as CREATININE_result_time
+                                                ,lab.harm_num_val as CREATININE
+                                            FROM ' || p_lab_table || ' lab
+                                            WHERE LAB.LAB_FLAG = ''CREATININE'' AND lab.harm_num_val <> 9999999) cr on bili.pat_id = cr.pat_id and (bili.result_time - cr.CREATININE_result_time) between -1 and 1                        
+                                    JOIN (SELECT DISTINCT lab.PAT_ID
+                                                ,lab.result_time as SODIUM_result_time
+                                                ,lab.harm_num_val as SODIUM
+                                            FROM ' || p_lab_table || ' lab
+                                            WHERE LAB.LAB_FLAG = ''SODIUM'' AND lab.harm_num_val <> 9999999) sod on bili.pat_id = sod.pat_id and (bili.result_time - sod.SODIUM_result_time) between -1 and 1                        
+                                    WHERE bili.LAB_FLAG = ''BILIRUBIN'' AND bili.harm_num_val <> 9999999                
+                            ) x
+                            )
+                            where LATEST_LAB = BILIRUBIN_result_time
+                            )
+        )x
+where 
+diff_inr = last_inr
+and diff_sodium = last_sodium
+and diff_albumin = last_albumin
+and diff_creatinine = last_creatinine';
+EXECUTE IMMEDIATE q1; 
+EXECUTE IMMEDIATE 'COMMIT';   
+EXECUTE IMMEDIATE q2;
+EXECUTE IMMEDIATE 'COMMIT';  
+end;
 
 -- MELD: apply MELD criteria
+create or replace procedure P_ACP_MELD(p_cohort_table in varchar2, p_lab_table in varchar2) as
+ q1 varchar2(4000);
+begin
 
+ q1 := 'UPDATE ' || p_cohort_table  || 
+  ' SET MELD = 1 
+  WHERE  
+    PAT_ID IN ( 
+                    select DISTINCT pat_id 
+                    from ( 
+                            select pat_id 
+                                    ,round( 
+                                    ( 
+                                        (0.378 * ln(Bilirubin)) + (1.120 * ln(INR)) + ((0.957 * ln(Creatinine)) + 0.643) 
+                                    ) * 10 
+                                    ,1) as meld 
+                                ,sodium 
+                                ,Bilirubin 
+                                ,creatinine 
+                                ,inr 
+                    from( 
+                        select  
+                                labs.pat_id 
+                                ,labs.Bilirubin 
+                                ,labs.INR 
+                                ,case when labs.Creatinine > 4.0 or dia.pat_id is not null then 4.0 
+                                    else labs.Creatinine 
+                                    end Creatinine                 
+                                ,case when labs.sodium > 137 then 137 
+                                    when labs.sodium < 125 then 125 
+                                    else labs.sodium 
+                                    end sodium 
+                        from xdr_acp_cohort     coh 
+                        JOIN  ' || p_lab_table || '                   LABS ON COH.PAT_ID = LABS.PAT_ID 
+                        left join (select pat_id, CREATININE_result_time 
+                                    from ( 
+                                        select lab.pat_id 
+                                                ,lab.CREATININE_result_time 
+                                                ,count(dia.contact_date) dialysis_count 
+                                        from  ' || p_lab_table || '   lab 
+                                        join  (SELECT DIAL.* 
+                                                FROM PT_DIALYSIS_HX                 dial 
+                                                JOIN  '|| p_cohort_table  ||'     coh ON dial.pat_id = coh.pat_id  
+                                                                                    AND (coh.PL_CIRRHOSIS = 1 OR COH.DX_CIRRHOSIS = 1) 
+                                                )          dia  on lab.pat_id = dia.pat_id  
+                                                                and dia.CONTACT_DATE between lab.CREATININE_result_time - 7  and lab.CREATININE_result_time   
+                                        group by lab.pat_id,lab.CREATININE_result_time 
+                                        ) 
+                        where dialysis_count >= 2)        dia on labs.pat_id = dia.pat_id and labs.CREATININE_RESULT_TIME = dia.CREATININE_RESULT_TIME 
+                        ) 
+            ) 
+where meld + 1.32 * (137 - sodium) - (0.033 * meld * (137 - sodium)) > 18) ';
+ EXECUTE IMMEDIATE q1;
+end;
 
 --Chemotherapy
 
@@ -1093,3 +1276,13 @@ end;
 
 
 -- randomization
+
+
+
+--drop tamp tables
+DROP TABLE XDR_ACP_DEPT_DRV PURGE;
+DROP TABLE XDR_ACP_DX_TEMP PURGE;
+DROP TABLE XDR_ACP_DX_LOOKUP PURGE;
+DROP TABLE XDR_ACP_PAT_STATUS PURGE;
+DROP TABLE XDR_ACP_CHEMO_CPT PURGE;
+DROP TABLE P_ACP_LAB_PULL PURGE;
