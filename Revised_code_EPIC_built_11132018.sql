@@ -1,7 +1,8 @@
 
   CREATE TABLE "XDR_ACP_COHORT" 
    (	"PAT_ID" VARCHAR2(18 BYTE), 
-	"PL_CANCER" NUMBER, 
+	"CURRENT_AGE" NUMBER,
+    "PL_CANCER" NUMBER, 
 	"PL_ESLD" NUMBER, 
 	"PL_COPD" NUMBER, 
 	"PL_COPD_SPO2" NUMBER, 
@@ -20,6 +21,7 @@
 	"DX_ALS" NUMBER, 
 	"DX_CANCER" NUMBER, 
 	"DX_CHF" NUMBER, 
+    "DX_COPD" NUMBER, 
 	"DX_ESRD" NUMBER, 
 	"DX_CIRRHOSIS" NUMBER, 
     "DX_PERITONITIS" NUMBER, 
@@ -43,6 +45,7 @@
 	"CHF" NUMBER, 
 	"ESRD" NUMBER, 
 	"ALS" NUMBER, 
+    "ALS" NUMBER, 
     "AGE" NUMBER
    )
 
@@ -52,7 +55,7 @@ ON COMMIT PRESERVE ROWS;
 
 INSERT INTO XDR_ACP_DEPT_DRV
 SELECT DISTINCT DEPARTMENT_ID
-FROM CLARITY_DEPT
+FROM clarity.CLARITY_DEPT
 WHERE DEPARTMENT_ID IN (
 910314,
 910310,
@@ -612,55 +615,56 @@ INSERT INTO XDR_ACP_CHEMO_CPT VALUES(96450);COMMIT;
 
 
 -- Create denominator
-exec P_ACP_CREATE_DENOMINATOR('xdr_acp_cohort');
+exec P_ACP_CREATE_DENOMINATOR('xdr_acp_cohort');        --117 seconds
 --remove excluded patients
-exec P_ACP_REMOVE_DECEASED('xdr_acp_cohort');
-exec P_ACP_REMOVE_RESTRICTED('xdr_acp_cohort');
+exec P_ACP_REMOVE_DECEASED('xdr_acp_cohort');           --657 seconds
+exec P_ACP_REMOVE_RESTRICTED('xdr_acp_cohort');         -- 5 seconds
 --apply problem list dx criterion
-exec P_ACP_PL_DX('xdr_acp_cohort','CANCER');
-exec P_ACP_PL_DX('xdr_acp_cohort','CHF');
-exec P_ACP_PL_DX('xdr_acp_cohort','ALS');
-exec P_ACP_PL_DX('xdr_acp_cohort','COPD');
-exec P_ACP_PL_DX('xdr_acp_cohort','COPD_SPO2');
-exec P_ACP_PL_DX('xdr_acp_cohort','CIRRHOSIS');
-exec P_ACP_PL_DX('xdr_acp_cohort','ESRD');
-exec P_ACP_PL_DX('xdr_acp_cohort','PERITONITIS');
-exec P_ACP_PL_DX('xdr_acp_cohort','HEPATORENAL');
-exec P_ACP_PL_DX('xdr_acp_cohort','BLEEDING');
-exec P_ACP_PL_DX('xdr_acp_cohort','ASCITES');
-exec P_ACP_PL_DX('xdr_acp_cohort','ENCEPHALOPATHY');
-exec P_ACP_PL_ESDL_DECOMPENSATION('xdr_acp_cohort');
+exec P_ACP_PL_DX('xdr_acp_cohort','CANCER');            -- 5 seconds
+exec P_ACP_PL_DX('xdr_acp_cohort','CHF');               -- 2 seconds
+exec P_ACP_PL_DX('xdr_acp_cohort','ALS');               -- .7 seconds
+exec P_ACP_PL_DX('xdr_acp_cohort','COPD');               -- 13 seconds
+exec P_ACP_PL_DX('xdr_acp_cohort','COPD_SPO2');               -- 1.3 seconds
+exec P_ACP_PL_DX('xdr_acp_cohort','CIRRHOSIS');               -- 9 seconds
+exec P_ACP_PL_DX('xdr_acp_cohort','ESRD');               --  5 seconds
+exec P_ACP_PL_DX('xdr_acp_cohort','PERITONITIS');               -- 1 seconds
+exec P_ACP_PL_DX('xdr_acp_cohort','HEPATORENAL');               -- .3 seconds
+exec P_ACP_PL_DX('xdr_acp_cohort','BLEEDING');               -- .3 seconds
+exec P_ACP_PL_DX('xdr_acp_cohort','ASCITES');               -- 2 seconds
+exec P_ACP_PL_DX('xdr_acp_cohort','ENCEPHALOPATHY');               -- 1 seconds
+exec P_ACP_PL_ESDL_DECOMPENSATION('xdr_acp_cohort');               -- 0 seconds
 --apply encounter dx criterion (3 years)
-exec P_ACP_ENC_DX('xdr_acp_cohort','CANCER');
-exec P_ACP_ENC_DX('xdr_acp_cohort','CHF');
-exec P_ACP_ENC_DX('xdr_acp_cohort','ALS');
-exec P_ACP_ENC_DX('xdr_acp_cohort','CIRRHOSIS');
-exec P_ACP_ENC_DX('xdr_acp_cohort','ESRD');
-exec P_ACP_ENC_DX('xdr_acp_cohort','PERITONITIS');
-exec P_ACP_ENC_DX('xdr_acp_cohort','ASCITES');
-exec P_ACP_ENC_DX('xdr_acp_cohort','BLEEDING');
-exec P_ACP_ENC_DX('xdr_acp_cohort','ENCEPHALOPATHY');
-exec P_ACP_ENC_DX('xdr_acp_cohort','HEPATORENAL');
-EXEC P_ACP_DX_ESDL_DECOMPENSATION('xdr_acp_cohort');
+exec P_ACP_ENC_DX('xdr_acp_cohort','CANCER');               -- 284 seconds
+exec P_ACP_ENC_DX('xdr_acp_cohort','CHF');                  -- 150 secnds
+exec P_ACP_ENC_DX('xdr_acp_cohort','ALS');                  -- 4 seconds
+exec P_ACP_ENC_DX('xdr_acp_cohort','CIRRHOSIS');            --103 seconds
+exec P_ACP_ENC_DX('xdr_acp_cohort','ESRD');                 --72 seconds
+exec P_ACP_ENC_DX('xdr_acp_cohort','PERITONITIS');          -- 4 seconds
+exec P_ACP_ENC_DX('xdr_acp_cohort','ASCITES');              --10 seconds
+exec P_ACP_ENC_DX('xdr_acp_cohort','BLEEDING');             --2 seconds
+exec P_ACP_ENC_DX('xdr_acp_cohort','ENCEPHALOPATHY');       --3 seconds
+exec P_ACP_ENC_DX('xdr_acp_cohort','HEPATORENAL');          --.5 seconds
+EXEC P_ACP_DX_ESDL_DECOMPENSATION('xdr_acp_cohort');        --.1 seconds
 --apply visit to departments criterion (oncology and nephrology)
-exec P_ACP_DEPT_VISIT('xdr_acp_cohort','ONC',1,'CANCER');
-exec P_ACP_DEPT_VISIT('xdr_acp_cohort','NEPH',1,'ESRD');
+exec P_ACP_DEPT_VISIT('xdr_acp_cohort','ONC',1,'CANCER');       --110 seconds
+exec P_ACP_DEPT_VISIT('xdr_acp_cohort','NEPH',1,'ESRD');            --8 seconds
 --apply admision for certain conditions (CHF AND COPD)
-exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'CHF');
-exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'COPD');
+exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'CHF');                --50 seconds
+exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'COPD');               --40 seconds
+--chemotherapy
+exec P_ACP_CHEMO_PROC('xdr_acp_cohort','XDR_ACP_CHEMO_CPT',2);      --568 seconds
+exec P_ACP_CHEMO_MEDS('xdr_acp_cohort','CHEMO',2);                  --260 seconds
 
 -- MELD
-exec P_ACP_LAB_PULL('xdr_acp_cohort');
+exec P_ACP_LAB_PULL('xdr_acp_lab','xdr_acp_cohort','jsanz.xdr_WALLING_LABDRV',3);
 
 -- EJECTION FRACTION
 
---chemotherapy
-exec P_ACP_CHEMO_MEDS('xdr_acp_cohort','CHEMO',2);
-exec P_ACP_CHEMO_PROC('xdr_acp_cohort','XDR_ACP_CHEMO_CPT',2);
-
 -- Merge criterion
+exec P_ACP_MERGE_CRITERION('xdr_acp_cohort');               --0.1 seconds
 -- Age criteria
--- finalize selection
+exec P_ACP_AGE_CRTIERIA('xdr_acp_cohort','75');             --0.1 seconds
+-- randomization
 
 
 
@@ -669,9 +673,9 @@ create or replace procedure p_acp_create_denominator(p_cohort_table in varchar2)
  q1 varchar2(4000);
 begin
 
- q1 := 'INSERT INTO ' || p_cohort_table  || '(PAT_ID,CREATION_DATE)  
+ q1 := 'INSERT INTO ' || p_cohort_table  || '(PAT_ID,current_age, CREATION_DATE)  
         SELECT DISTINCT x.pat_id
-                    ,FLOOR(MONTHS_BETWEEN(TRUNC(sysdate),TRUNC(PAT.BIRTH_DATE))/12) AS CURRENT_AGE
+                    ,FLOOR(MONTHS_BETWEEN(TRUNC(sysdate),TRUNC(pat.BIRTH_DATE))/12) AS CURRENT_AGE
             ,SYSDATE AS CREATION_DATE
         FROM (SELECT enc.pat_id
                     ,PAT.BIRTH_DATE
@@ -683,17 +687,16 @@ begin
                                                     AND prov2.user_id IS NOT NULL
         JOIN XDR_ACP_DEPT_DRV      dd on enc.department_id = dd.department_id
         WHERE 
-
                 enc.effective_date_dt between sysdate - 366 and sysdate 
                 and floor(months_between(TRUNC(sysdate), pat.birth_date)/12) >= 18
                 and enc.enc_type_c = 101
                 and (enc.appt_status_c is not null and enc.appt_status_c not in (3,4,5))
                 GROUP BY enc.PAT_ID,
                     PAT.BIRTH_DATE)x
+        JOIN clarity.patient                        pat   ON x.pat_id = pat.pat_id
         WHERE x.pat_enc_count > 1';
  EXECUTE IMMEDIATE q1;
 end;
-
 
 --remove excluded patients (DECEASED)
 create or replace procedure p_acp_remove_deceased(p_cohort_table in varchar2) as
@@ -857,12 +860,12 @@ end;
 
 
 -- MELD: pull labs
-create or replace procedure P_ACP_LAB_PULL(p_cohort_table in varchar2) as
+create or replace procedure P_ACP_LAB_PULL(p_table_name in varchar2, p_cohort_table in varchar2, p_driver_table  in varchar2, p_timeframe in number) as
  q1 varchar2(4000);
  q2 varchar2(4000);
 begin
 
-q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_cohort_table  || ' ("PAT_ID" VARCHAR2(18 BYTE), 
+q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_table_name  || ' ("PAT_ID" VARCHAR2(18 BYTE), 
 	"PAT_ENC_CSN_ID" NUMBER(18,0), 
 	"PROC_CODE" VARCHAR2(91 BYTE), 
 	"COMPONENT_ID" NUMBER(18,0), 
@@ -872,36 +875,37 @@ q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_cohort_table  || ' ("PAT_ID" VARCHAR
     ) 
  ON COMMIT PRESERVE ROWS';
 
- q2 := 'INSERT INTO ' || p_cohort_table || '(PAT_ID,PAT_ENC_CSN_ID,PROC_CODE,COMPONENT_ID, RESULT_TIME, LAB_FLAG, HARM_NUM_VAL) 
+ q2 := 'INSERT INTO ' || p_table_name || '(PAT_ID,PAT_ENC_CSN_ID,PROC_CODE,COMPONENT_ID, RESULT_TIME, LAB_FLAG, HARM_NUM_VAL) 
      SELECT 	DISTINCT coh.pat_id, 
                 o.pat_enc_csn_id, 
                 p.proc_code, 
                 o.component_id, 
                 p.result_time, 
                 drv.LAB_CATEGORY as LAB_FLAG, 
-                CASE WHEN REGEXP_LIKE(ord_value,'':'',''i'') or REGEXP_SUBSTR(ord_value,''[1-9]\d*(\.\,\d+)?'') IS NULL 
-                       THEN ord_num_value 
-                  WHEN REGEXP_LIKE(ord_value,''[<>]=*'',''i'') 
-                       THEN TO_NUMBER(REGEXP_SUBSTR(ord_value,''-?[[:digit:],.]*$''),''9999999999D9999999999'', ''NLS_NUMERIC_CHARACTERS = ''''.,'''''' ) 
-                  WHEN REGEXP_LIKE(ord_value,''%'',''i'')  
-                       THEN TO_NUMBER(REGEXP_SUBSTR(ord_value,''[1-9]\d*(\.\,\d+)?''),''9999999999D9999999999'', ''NLS_NUMERIC_CHARACTERS = ''''.,'''''' )  
-                  ELSE ord_num_value END as harm_num_val                       
+                CASE WHEN REGEXP_LIKE(o.ord_value,'':'',''i'') or REGEXP_SUBSTR(o.ord_value,''[1-9]\d*(\.\,\d+)?'') IS NULL 
+                       THEN o.ord_num_value 
+                  WHEN REGEXP_LIKE(o.ord_value,''[<>]=*'',''i'') 
+                       THEN TO_NUMBER(REGEXP_SUBSTR(o.ord_value,''-?[[:digit:],.]*$''),''9999999999D9999999999'', ''NLS_NUMERIC_CHARACTERS = ''''.,'''''' ) 
+                  WHEN REGEXP_LIKE(o.ord_value,''%'',''i'')  
+                       THEN TO_NUMBER(REGEXP_SUBSTR(o.ord_value,''[1-9]\d*(\.\,\d+)?''),''9999999999D9999999999'', ''NLS_NUMERIC_CHARACTERS = ''''.,'''''' )   
+                  ELSE o.ord_num_value END as harm_num_val                       
       FROM order_results                o 
       JOIN order_proc                   p   ON p.order_proc_id = o.order_proc_id 
-      JOIN XDR_ACP_COHORT                  coh ON p.pat_id = coh.pat_id AND (coh.PL_CIRRHOSIS = 1 OR COH.DX_CIRRHOSIS = 1) 
-      JOIN jsanz.xdr_WALLING_LABDRV     drv ON p.proc_id = drv.proc_id and o.component_id = drv.component_id 
+      JOIN ' || p_cohort_table  || '    coh ON p.pat_id = coh.pat_id AND (coh.PL_CIRRHOSIS = 1 OR COH.DX_CIRRHOSIS = 1) 
+      JOIN ' || p_driver_table  || '    drv ON p.proc_id = drv.proc_id and o.component_id = drv.component_id 
       JOIN order_proc_2                 op2 ON p.ORDER_PROC_ID = op2.ORDER_PROC_ID  
       JOIN clarity_component            cc  ON o.component_id = cc.component_id 
       LEFT JOIN lnc_db_main             ldm ON cc.DEFAULT_LNC_ID = ldm.record_id  
-      
       WHERE  
               p.order_type_c IN (7) 
               AND o.ord_value IS NOT NULL 
               AND o.order_proc_id IS NOT NULL 
-              AND p.order_time BETWEEN SYSDATE - (365.25 * 3) AND SYSDATE';
-                      
+              AND p.order_time BETWEEN SYSDATE - (365.25 * ' || p_timeframe || ') AND SYSDATE';
+ 
 EXECUTE IMMEDIATE q1; 
+EXECUTE IMMEDIATE 'COMMIT';   
 EXECUTE IMMEDIATE q2;
+EXECUTE IMMEDIATE 'COMMIT';                    
 end;
 
 -- MELD: processed labs
@@ -942,7 +946,6 @@ begin
 EXECUTE IMMEDIATE q1; 
 EXECUTE IMMEDIATE 'COMMIT';  
 end;
-
 create or replace procedure P_ACP_CHEMO_MEDS(p_cohort_table in varchar2, p_med_keyword  in varchar2, p_timeframe in number) as
  q1 varchar2(4000);
 
@@ -951,28 +954,27 @@ begin
   SET CHEMO = 1  
   WHERE  
     PAT_ID IN (      
-        SELECT DISTINCT  med1.pat_id
-FROM (
-        SELECT  m.pat_id,
-            m.order_med_id, 
-          case when m.medication_id != 800001 then m.medication_id
+        SELECT DISTINCT  med1.pat_id 
+        FROM ( 
+        SELECT  m.pat_id, 
+            m.order_med_id,  
+          case when m.medication_id != 800001 then m.medication_id 
                else coalesce(omi.dispensable_med_id, m.user_sel_med_id) end as used_med_id,        
-            zom.name as ordering_mode,
-            zoc.name as order_class
-        FROM ' || p_cohort_table  || '      coh
-        JOIN order_med                      m   ON coh.pat_id = m.pat_id
-        LEFT JOIN order_medinfo omi on m.order_med_id = omi.order_med_id
-        left join zc_order_class zoc on m.order_class_C = zoc.order_class_c
-        left join zc_ordering_mode zom on m.ordering_mode_c = zom.ordering_mode_c
-        WHERE 
-            (coh.PL_ADVANCED_CANCER = 1 OR COH.DX_ADVANCED_CANCER = 1)
-            AND TRUNC(m.ordering_date) BETWEEN sysdate - (365.25 * ' || p_timeframe ||') AND sysdate
-            and zoc.name <> ''Historical Med''
-    ) med1
-LEFT JOIN clarity_medication cm on med1.used_med_id = cm.medication_id
-LEFT JOIN mar_admin_info  mar   ON med1.order_med_id = mar.order_med_id
-LEFT JOIN zc_mar_rslt     xmrs  ON mar.mar_action_c = xmrs.result_c
-
+            zom.name as ordering_mode, 
+            zoc.name as order_class 
+        FROM ' || p_cohort_table  || '      coh 
+        JOIN order_med                      m   ON coh.pat_id = m.pat_id 
+        LEFT JOIN order_medinfo omi on m.order_med_id = omi.order_med_id 
+        left join zc_order_class zoc on m.order_class_C = zoc.order_class_c 
+        left join zc_ordering_mode zom on m.ordering_mode_c = zom.ordering_mode_c 
+        WHERE  
+            (coh.PL_CANCER = 1 OR COH.DX_CANCER = 1) 
+            AND TRUNC(m.ordering_date) BETWEEN sysdate - (365.25 * ' || p_timeframe ||') AND sysdate 
+            and zoc.name <> ''Historical Med'' 
+    ) med1 
+LEFT JOIN clarity_medication cm on med1.used_med_id = cm.medication_id 
+LEFT JOIN mar_admin_info  mar   ON med1.order_med_id = mar.order_med_id 
+LEFT JOIN zc_mar_rslt     xmrs  ON mar.mar_action_c = xmrs.result_c 
 WHERE 
   (
   (med1.ordering_mode = ''Inpatient''                                       
@@ -980,25 +982,31 @@ WHERE
             AND nvl(mar.sig,-1) > 0                                             -- and SIG was valid and > 0
             AND nvl(mar.mar_action_c,-1) <> 125                                 -- and action was anything other than ''Not Given''
          ) 
-         OR med1.ordering_mode != ''Inpatient''
+         OR med1.ordering_mode != ''Inpatient'' 
         )
-    AND med1.used_med_id IS NOT NULL
+    AND med1.used_med_id IS NOT NULL 
     AND (
-        cm.pharm_subclass_c in (2150) 
-        or regexp_like(cm.name,''' || p_med_keyword || ''',''i'')
-        or regexp_like(cm.generic_name,''' || p_med_keyword || ''',''i'')
+        cm.pharm_subclass_c in (2150)  
+        or regexp_like(cm.name,''' || p_med_keyword || ''',''i'') 
+        or regexp_like(cm.generic_name,''' || p_med_keyword || ''',''i'') 
+    )
     )';
-
 
 EXECUTE IMMEDIATE q1; 
 EXECUTE IMMEDIATE 'COMMIT';  
 end;
 
-
 -- EJECTION FRACTION
+
+
 -- Merge criterion
-create or replace procedure P_ACP_CHEMO_MEDS(p_cohort_table in varchar2) as
+create or replace procedure P_ACP_MERGE_CRITERION(p_cohort_table in varchar2) as
  q1 varchar2(4000);
+ q2 varchar2(4000);
+ q3 varchar2(4000);
+ q4 varchar2(4000);
+ q5 varchar2(4000);
+ q6 varchar2(4000);
 
 begin
  q1 := 'UPDATE ' || p_cohort_table  || ' 
@@ -1019,7 +1027,7 @@ begin
 q3 := 'UPDATE ' || p_cohort_table  || ' 
   SET CHF = 1 ,SELECTED = 1 
   WHERE  
-        ((PL_CHF = 1 OR DX_CHF = 1) AND LVEF = 1)
+        ((PL_CHF = 1 OR DX_CHF = 1) AND EF = 1)
         OR
         (PL_CHF = 1  AND CHF_ADMIT = 1)'
     ;
@@ -1033,7 +1041,7 @@ q4 := 'UPDATE ' || p_cohort_table  || '
 q5 := 'UPDATE ' || p_cohort_table  || ' 
   SET ESLD = 1 ,SELECTED = 1  
   WHERE  
-        PL_CIRROHSIS = 1 
+        PL_CIRRHOSIS = 1 
         AND 
         (PL_ESDL_DECOMPENSATION = 1
         OR dx_ESDL_decompensation = 1
@@ -1064,8 +1072,8 @@ EXECUTE IMMEDIATE q6;
 EXECUTE IMMEDIATE 'COMMIT'; 
 
 end;
--- Age criteria
 
+-- Age criteria
 create or replace procedure P_ACP_AGE_CRTIERIA(p_table_name in varchar2, p_age_limit in varchar2) as
  q1 varchar2(4000);
 begin
@@ -1074,10 +1082,14 @@ begin
         SET AGE = 1
         WHERE 
             SELECTED IS NULL
-            AND (pl_copd + pl_chf + PL_ESRD + PL_ALS + PL_ADVANCED_CANCER >= 1)
+            AND (pl_copd IS NOT NULL
+            OR pl_chf IS NOT NULL 
+            OR PL_ESRD IS NOT NULL
+            OR PL_ALS IS NOT NULL 
+            OR PL_CANCER IS NOT NULL)
             and CURRENT_AGE >= ' || p_age_limit || '';
 EXECUTE IMMEDIATE q1;
-end;        
+end; 
 
 
--- finalize selection
+-- randomization
