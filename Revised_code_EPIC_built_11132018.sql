@@ -576,6 +576,20 @@ join edg_current_icd10           edg on drv.icd_CODE = edg.CODE
 ;
 
 
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_PAT_STATUS(appt_status_c NUMBER)
+ON COMMIT PRESERVE ROWS;
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(3);
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(4);
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(5);
+
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_PAT_STATUS(appt_status_c NUMBER)
+ON COMMIT PRESERVE ROWS;
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(3);
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(4);
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(5);
+
+
+
 
 -- Create denominator
 exec P_ACP_CREATE_DENOMINATOR('xdr_acp_cohort');
@@ -610,6 +624,8 @@ exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'CHF');
 exec P_ACP_DEPT_ADMIT('xdr_acp_cohort',1,'COPD');
 
 -- MELD
+exec P_ACP_LAB_PULL('xdr_acp_cohort');
+
 -- EJECTION FRACTION
 -- Merge criterion
 -- Age criteria
@@ -786,7 +802,55 @@ end;
 
 
 -- MELD
+create or replace procedure P_ACP_LAB_PULL(p_table_name in varchar2) as
+ q1 varchar2(4000);
+ q2 varchar2(4000);
+begin
 
+q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_table_name  || ' ("PAT_ID" VARCHAR2(18 BYTE), 
+	"PAT_ENC_CSN_ID" NUMBER(18,0), 
+	"PROC_CODE" VARCHAR2(91 BYTE), 
+	"COMPONENT_ID" NUMBER(18,0), 
+	"RESULT_TIME" DATE, 
+	"LAB_FLAG" VARCHAR2(50 BYTE),
+	"HARM_NUM_VAL" NUMBER
+    ) 
+ ON COMMIT PRESERVE ROWS';
+
+ q2 := 'INSERT INTO ' || p_table_name || '(PAT_ID,PAT_ENC_CSN_ID,PROC_CODE,COMPONENT_ID, RESULT_TIME, LAB_FLAG, HARM_NUM_VAL) 
+     SELECT 	DISTINCT coh.pat_id, 
+                o.pat_enc_csn_id, 
+                p.proc_code, 
+                o.component_id, 
+                p.result_time, 
+                drv.LAB_CATEGORY as LAB_FLAG, 
+                CASE WHEN REGEXP_LIKE(ord_value,'':'',''i'') or REGEXP_SUBSTR(ord_value,''[1-9]\d*(\.\,\d+)?'') IS NULL 
+                       THEN ord_num_value 
+                  WHEN REGEXP_LIKE(ord_value,''[<>]=*'',''i'') 
+                       THEN TO_NUMBER(REGEXP_SUBSTR(ord_value,''-?[[:digit:],.]*$''),''9999999999D9999999999'', ''NLS_NUMERIC_CHARACTERS = ''''.,'''''' ) 
+                  WHEN REGEXP_LIKE(ord_value,''%'',''i'')  
+                       THEN TO_NUMBER(REGEXP_SUBSTR(ord_value,''[1-9]\d*(\.\,\d+)?''),''9999999999D9999999999'', ''NLS_NUMERIC_CHARACTERS = ''''.,'''''' )  
+                  ELSE ord_num_value END as harm_num_val                       
+      FROM order_results                o 
+      JOIN order_proc                   p   ON p.order_proc_id = o.order_proc_id 
+      JOIN XDR_ACP_COHORT                  coh ON p.pat_id = coh.pat_id AND (coh.PL_CIRRHOSIS = 1 OR COH.DX_CIRRHOSIS = 1) 
+      JOIN jsanz.xdr_WALLING_LABDRV     drv ON p.proc_id = drv.proc_id and o.component_id = drv.component_id 
+      JOIN order_proc_2                 op2 ON p.ORDER_PROC_ID = op2.ORDER_PROC_ID  
+      JOIN clarity_component            cc  ON o.component_id = cc.component_id 
+      LEFT JOIN lnc_db_main             ldm ON cc.DEFAULT_LNC_ID = ldm.record_id  
+      
+      WHERE  
+              p.order_type_c IN (7) 
+              AND o.ord_value IS NOT NULL 
+              AND o.order_proc_id IS NOT NULL 
+              AND p.order_time BETWEEN SYSDATE - (365.25 * 3) AND SYSDATE';
+                      
+EXECUTE IMMEDIATE q1; 
+EXECUTE IMMEDIATE q2;
+end;
+
+
+                
 
 -- EJECTION FRACTION
 -- Merge criterion
