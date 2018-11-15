@@ -52,8 +52,12 @@
     "NEXT_APPT_LOC_ID" VARCHAR2(25),
     "CLINIC_LAST_PCP" NUMBER,
     "CLINIC_MOST_VISITS" NUMBER,
+    "CLINIC"  NUMBER,
     "CUR_PCP_PROV_ID" VARCHAR(50),
-    "RANDOMIZATION_ARM" VARCHAR(50)
+    "RANDOMIZATION_ARM" VARCHAR(50),
+    "COORDINATOR_ID" VARCHAR2(250 BYTE),
+    "APPOINTMENT_DATE" DATE,
+    "APPOINTMENT_CSN" VARCHAR(50)
    )
 
 --It needs a section for the driver-specific tables/references
@@ -695,6 +699,52 @@ INSERT INTO XDR_ACP_APPT_TYPE(PRC_ID) VALUES('2851');COMMIT;
 INSERT INTO XDR_ACP_APPT_TYPE(PRC_ID) VALUES('4359');COMMIT;
 INSERT INTO XDR_ACP_APPT_TYPE(PRC_ID) VALUES('3476');COMMIT;
 
+
+DROP TABLE  XDR_ACP_CLINICS PURGE;
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_CLINICS(	"LOC_ID" NUMBER(18,0), 
+	"COORDINATOR_ID" VARCHAR2(128 BYTE)
+   ) ON COMMIT PRESERVE ROWS;
+
+   
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7083,'MORRISSEY, KIRA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7000,'TAGAYUN, MARIE');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8082,'SPENCER BAEZ, RAYMOND');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8006,'LEGASPI, SHEILA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(1675,'RAMIREZ, SHARON');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6016,'KAUR, HARMANDEEP');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6017,'MEDINA, ARMANDO');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7084,'LOPEZ, CLAUDIA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8182,'AISPURO, VANESSA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7025,'VALENCIA, APRIL');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7083,'KAUR, HARMANDEEP');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8084,'SPENCER BAEZ, RAYMOND');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6000,'BASCOS, ELAINE');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7014,'AISPURO, VANESSA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7023,'FERNANDEZ, THEA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8151,'FERNANDEZ, THEA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(1846,'GARCIA, EVELYN');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6017,'CRAIGEN, SENITA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(1847,'LEGASPI, SHEILA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6017,'KWAN, ERIC');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8008,'AISPURO, VANESSA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7021,'AISPURO, VANESSA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7024,'LUA, PATRICIA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6017,'NOEL, KEVIN');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7011,'LANDAVERDE, LISETTE');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7008,'LUA, PATRICIA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8010,'LOPEZ, CLAUDIA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7007,'TROTTER, ALDOUS');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8002,'SANDOVAL, JESSICA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8022,'SPENCER BAEZ, RAYMOND');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7046,'RODRIGUEZ, DARLENE');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(7000,'KAUR, HARMANDEEP');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6020,'CRAIGEN, SENITA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6004,'MEDINA, ARMANDO');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8000,'TROTTER, ALDOUS');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(2455,'AISPURO, VANESSA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8092,'GARCIA, EVELYN');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6016,'MORRISSEY, KIRA');COMMIT;
+INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6002,'BASCOS, ELAINE');COMMIT;
 -- Create denominator
 exec P_ACP_CREATE_DENOMINATOR('XDR_ACP_COHORT','XDR_ACP_APPT_STATUS');
 --remove excluded patients
@@ -780,10 +830,13 @@ delete from XDR_ACP_COHORT where selected is null;
 
 --CCC and clinic assignment
 exec P_ACP_LOC_LAST_PCP('XDR_ACP_COHORT', 'XDR_ACP_DEPT_DRV', 'XDR_ACP_APPT_TYPE', 'XDR_ACP_APPT_STATUS');
+exec P_ACP_loc_most_visits('XDR_ACP_COHORT', 'XDR_ACP_DEPT_DRV', 'XDR_ACP_APPT_TYPE', 'XDR_ACP_APPT_STATUS');
+exec  P_ACP_COORDINATOR('XDR_ACP_COHORT','XDR_ACP_CLINICS');
 
 -- randomization
 
 --upcoming PC appointment 
+exec P_ACP_APPOINTMENT('XDR_ACP_COHORT', 'XDR_ACP_DEPT_DRV', 'XDR_ACP_APPT_TYPE', 'XDR_ACP_APPT_STATUS');
 
 --drop temp tables
 exec p_acp_clean_up('XDR_ACP_DEPT_DRV');
@@ -1372,8 +1425,11 @@ begin
 EXECUTE IMMEDIATE q1;
 end; 
 
+
+--remove excluded patients (DECEASED)
+
 --CCC and clinic assignment
---apply problem list dx criterion
+
 create or replace procedure P_ACP_loc_last_pcp(p_cohort_table in varchar2, p_driver_dept in varchar2, p_driver_appt_type in varchar2, p_driver_appt_status in varchar2) as
  q1 varchar2(4000);
 begin
@@ -1437,12 +1493,154 @@ UPDATE SET coh.CLINIC_LAST_PCP = r.LOC_ID';
 
 EXECUTE IMMEDIATE q1;
 end;
+
+
+create or replace procedure P_ACP_loc_most_visits(p_cohort_table in varchar2, p_driver_dept in varchar2, p_driver_appt_type in varchar2, p_driver_appt_status in varchar2) as
+ q1 varchar2(4000);
+begin
+ q1 := 'MERGE INTO ' || p_cohort_table  || ' coh 
+USING ( 
+SELECT DISTINCT PAT_ID
+        ,LOC_ID
+FROM (SELECT DISTINCT PAT_ID
+        ,LOC_ID
+        ,rank() over(
+                    partition by pat_id 
+                    order by pat_id, ENC_COUNT desc, last_visit DESC,PCP_VISIT_YN
+                    ) ranking
+--,MAX(contact_date) OVER (PARTITION BY pat_id, LOC_ID) AS last_visit
+FROM (SELECT coh.PAT_ID
+            ,loc.LOC_ID
+            ,case when coh.CUR_PCP_PROV_ID =  enc.VISIT_PROV_ID then 1 else 0 end pcp_visit_yn 
+            ,max(enc.effective_date_dt) over (partition by coh.pat_id, LOC_ID) as last_visit
+            ,count(enc.pat_enc_csn_id) over (partition by coh.pat_id, loc.LOC_ID) as ENC_COUNT
+            FROM ' || p_cohort_table  || '         coh 
+            join pat_enc                enc ON coh.PAT_ID = enc.PAT_ID 
+            JOIN ' || p_driver_dept || '       dep on enc.DEPARTMENT_ID = dep.department_id 
+            left join clarity_dep dep2 on dep.department_id = dep2.department_id 
+            left join clarity_loc loc on dep2.rev_loc_id = loc.loc_id 
+            join ' || p_driver_appt_type || '      apt on enc.APPT_PRC_ID = apt.prc_id 
+            where  
+                    enc.effective_date_dt between sysdate - 366 and sysdate  
+                    and enc.enc_type_c = 101 
+                    and (enc.appt_status_c is not null and enc.appt_status_c not in (SELECT APPT_STATUS_C 
+                                                                                            FROM ' || p_driver_appt_status || '
+                                                                                            WHERE APPT_CAT = ''exclude'' )
+                        and enc.department_id not in (      --Exclude Emergency Care 
+                                    ''70011''       --	SMBP WILSHIRE UC 
+                                        ,''80008''        --	SMBP MARINA DL REY UC 
+                                        --Exclude 1223 16th street 3100 
+                                        ,''70232''            --	GERI SM 3100 
+                                        --Exclude SMBP 1090 
+                                        ,''70216''            --SMBP 10TH FL 1090   
+                                        --exclude WW COMP HLTH STE 525 
+                                        ,''60155''            --	IM CHP MP1 525 
+                                        --WLV EAST WEST CENTER 
+                                        ,''80044''            --	IM EAST WEST MED WLV 
+                                        ,''80106''            --	PET CT IMG WESTLAKE  
+                                        --UCLA Health Torrance Specialty Care 
+                                        ,''80273''            --	EAST WEST TORR STE 302 
+                                ) 
+                )
+            ) 
+    WHERE 
+        pcp_visit_yn = 1 
+        --add exclusion for emergency depts 
+
+    ) 
+WHERE    ranking = 1 
+)r 
+ON 
+(COH.PAT_ID = R.PAT_ID) 
+WHEN MATCHED THEN 
+UPDATE SET coh.clinic_most_visits = r.LOC_ID'; 
+
+EXECUTE IMMEDIATE q1;
+end;
+
+create or replace procedure P_ACP_CLINIC(p_table_name in varchar2) as
+ q1 varchar2(4000);
+begin
+
+ q1 := 'update ' || p_table_name  || ' 
+    set clinic_id = COALESCE(CLINIC_LAST_PCP,CLINIC_MOST_VISITS)';
+EXECUTE IMMEDIATE q1;
+end; 
+
+--ASSIGN CARE COORDIANTORR  
+create or replace procedure P_ACP_COORDINATOR(p_cohort_table in varchar2, p_driver_table in varchar2) as
+ q1 varchar2(4000);
+begin
+
+ q1 := '
+merge into ' || p_cohort_table  || '  coh
+USING
+(SELECT distinct coh.pat_id
+            ,gr.coordinator_id
+FROM ' || p_cohort_table  || '  coh
+join ' || p_driver_table || '  gr on clinic_id = gr.loc_id
+WHERE GR.LOC_ID NOT IN (
+    -- clincis with +1 CCC
+6016
+,7083
+,6017
+,7000)
+) r
+on
+(coh.pat_id = r.pat_id)
+when matched THEN
+update SET coh.coordinator_id = r.coordinator_id';
+EXECUTE IMMEDIATE q1;
+end; 
+
+
 -- randomization
 
 --upcoming PC appointment 
+create or replace procedure P_ACP_APPOINTMENT(p_cohort_table in varchar2, p_driver_dept in varchar2, p_driver_appt_type in varchar2, p_driver_appt_status in varchar2) as
+ q1 varchar2(4000);
+begin
+ q1 := '
+MERGE INTO ' || p_cohort_table || ' coh
+USING (
+SELECT * FROM (
+SELECT DISTINCT coh.pat_id
+               ,vsa.pat_enc_csn_id
+               ,vsa.appt_dttm
+               ,vsa.department_id
+               ,vsa.department_name
+               ,vsa.dept_specialty_c   
+               ,vsa.dept_specialty_name AS department_specialty
+               ,vsa.loc_id            
+               ,vsa.loc_name
+               ,vsa.prov_id
+               ,vsa.prov_name_wid
+               ,COH.CUR_PCP_PROV_ID
+              ,case when COH.CUR_PCP_PROV_ID = vsa.prov_id then 1 else 0 end appt_pcp_yn
+              ,rank() over(
+                    partition by coh.pat_id 
+                    order by coh.pat_id, vsa.appt_dttm asc
+                    ) ranking
+  FROM ' || p_cohort_table || '                            coh
+  JOIN v_sched_appt           vsa   ON coh.pat_id = vsa.pat_id
+  JOIN ' || p_driver_dept || '       dep on vsa.DEPARTMENT_ID = dep.department_id
+  join ' || p_driver_appt_type || '      apt   ON vsa.prc_id = apt.prc_id
+  join ' || p_driver_appt_status || '    stt  ON vsa.appt_status_c = stt.APPT_STATUS_C AND stt.appt_cat = ''include''
+  WHERE vsa.appt_dttm > sysdate
+  )
+  where ranking = 1
+  ) r
+  ON 
+  (coh.pat_Id = r.pat_id)
+  WHEN MATCHED THEN
+  UPDATE SET coh.APPOINTMENT_DATE = r.appt_dttm
+  ,coh.APPOINTMENT_CSN = r.pat_enc_csn_id';
+  EXECUTE IMMEDIATE q1;
+end; 
+
 
 --drop tEmp tables
---remove excluded patients (DECEASED)
+
 create or replace procedure p_acp_clean_up(p_table_name in varchar2) as
  q1 varchar2(4000);
 begin
