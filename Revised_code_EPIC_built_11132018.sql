@@ -46,7 +46,10 @@
 	"ESRD" NUMBER, 
     "ALS" NUMBER, 
     "AGE" NUMBER,
-    "SELECTED" NUMBER
+    "SELECTED" NUMBER,
+    "NEXT_APPT_DATE" DATE,
+    "NEXT_APPT_PROVIDER_ID" VARCHAR2(25),
+    "NEXT_APPT_LOC_ID" VARCHAR2(25)
    )
 
 --It needs a section for the driver-specific tables/references
@@ -696,15 +699,29 @@ ON COMMIT PRESERVE ROWS;
 
 exec P_ACP_LAB_MELD_TABLE('XDR_ACP_LAB','XDR_ACP_MELD_TABLE');
 exec P_ACP_MELD('XDR_ACP_COHORT','XDR_ACP_MELD_TABLE')
+
 -- EJECTION FRACTION
 
 -- Merge criterion
 exec P_ACP_MERGE_CRITERION('XDR_ACP_COHORT');
 -- Age criteria
 exec P_ACP_AGE_CRTIERIA('XDR_ACP_COHORT','75');
+
+
+--CCC and clinic assignment
+
 -- randomization
 
+--upcoming PC appointment 
 
+--drop temp tables
+exec p_acp_clean_up('XDR_ACP_DEPT_DRV');
+exec p_acp_clean_up('XDR_ACP_DX_TEMP');
+exec p_acp_clean_up('XDR_ACP_DX_LOOKUP');
+exec p_acp_clean_up('XDR_ACP_PAT_STATUS');
+exec p_acp_clean_up('XDR_ACP_CHEMO_CPT');
+exec p_acp_clean_up('XDR_ACP_LAB');
+exec p_acp_clean_up('XDR_ACP_MELD_TABLE');
 
 -- Create denominator
 create or replace procedure p_acp_create_denominator(p_cohort_table in varchar2, p_driver_table in varchar2) as
@@ -1282,15 +1299,21 @@ begin
 EXECUTE IMMEDIATE q1;
 end; 
 
+--CCC and clinic assignment
+
 
 -- randomization
 
+--upcoming PC appointment 
 
 --drop tEmp tables
-DROP TABLE XDR_ACP_DEPT_DRV PURGE;
-DROP TABLE XDR_ACP_DX_TEMP PURGE;
-DROP TABLE XDR_ACP_DX_LOOKUP PURGE;
-DROP TABLE XDR_ACP_PAT_STATUS PURGE;
-DROP TABLE XDR_ACP_CHEMO_CPT PURGE;
-DROP TABLE XDR_ACP_LAB PURGE;
-DROP TABLE XDR_ACP_MELD_TABLE PURGE;
+--remove excluded patients (DECEASED)
+create or replace procedure p_acp_clean_up(p_table_name in varchar2) as
+ q1 varchar2(4000);
+begin
+
+ q1 := 'DROP TABLE ' || p_table_name  ||
+        ' PURGE';
+ EXECUTE IMMEDIATE q1;
+end;
+
