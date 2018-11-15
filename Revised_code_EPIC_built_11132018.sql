@@ -57,13 +57,15 @@
    )
 
 --It needs a section for the driver-specific tables/references
-CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DEPT_DRV(DEPARTMENT_ID NUMBER)
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DEPT_DRV(dep.DEPARTMENT_ID NUMBER), LOC_ID number)
 ON COMMIT PRESERVE ROWS;
 
 INSERT INTO XDR_ACP_DEPT_DRV
-SELECT DISTINCT DEPARTMENT_ID
-FROM clarity.CLARITY_DEPT
-WHERE DEPARTMENT_ID IN (
+SELECT DISTINCT dep.DEPARTMENT_ID
+            ,loc.loc_id
+FROM clarity.CLARITY_DEP dep
+left join clarity_loc    loc on dep.rev_loc_id = loc.loc_id
+WHERE dep.DEPARTMENT_ID IN (
 910314,
 910310,
 70085,
@@ -602,11 +604,12 @@ INSERT INTO XDR_ACP_PAT_STATUS VALUES(9);COMMIT;
 INSERT INTO XDR_ACP_PAT_STATUS VALUES(1018);COMMIT;
 INSERT INTO XDR_ACP_PAT_STATUS VALUES(1053);COMMIT;
 
-CREATE GLOBAL TEMPORARY TABLE XDR_ACP_APPT_STATUS(appt_status_c NUMBER)
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_APPT_STATUS(appt_status_c NUMBER, appt_cat VARCHAR2(25 BYTE))
 ON COMMIT PRESERVE ROWS;
-INSERT INTO XDR_ACP_APPT_STATUS VALUES(3);COMMIT;
-INSERT INTO XDR_ACP_APPT_STATUS VALUES(4);COMMIT;
-INSERT INTO XDR_ACP_APPT_STATUS VALUES(5);COMMIT;
+INSERT INTO XDR_ACP_APPT_STATUS VALUES(1,'include');COMMIT;
+INSERT INTO XDR_ACP_APPT_STATUS VALUES(3,'exclude');COMMIT;
+INSERT INTO XDR_ACP_APPT_STATUS VALUES(4,'exclude');COMMIT;
+INSERT INTO XDR_ACP_APPT_STATUS VALUES(5,'exclude');COMMIT;
 
 
 --Chemotherapy CPT codes
@@ -776,6 +779,7 @@ exec P_ACP_AGE_CRTIERIA('XDR_ACP_COHORT','75');
 delete from XDR_ACP_COHORT where selected is null;
 
 --CCC and clinic assignment
+exec P_ACP_LOC_LAST_PCP('XDR_ACP_COHORT', 'XDR_ACP_DEPT_DRV', 'XDR_ACP_APPT_TYPE', 'XDR_ACP_APPT_STATUS');
 
 -- randomization
 
@@ -814,7 +818,8 @@ begin
                 and floor(months_between(TRUNC(sysdate), pat.birth_date)/12) >= 18
                 and enc.enc_type_c = 101
                 and (enc.appt_status_c is not null and enc.appt_status_c not in (SELECT APPT_STATUS_C
-                                                                                FROM ' || p_driver_table || ')
+                                                                                FROM ' || p_driver_table || '
+                                                                                WHERE appt_cat = ''exclude'')
                     ) 
                 GROUP BY enc.PAT_ID,
                     PAT.BIRTH_DATE)x
@@ -1368,8 +1373,70 @@ EXECUTE IMMEDIATE q1;
 end; 
 
 --CCC and clinic assignment
+--apply problem list dx criterion
+create or replace procedure P_ACP_loc_last_pcp(p_cohort_table in varchar2, p_driver_dept in varchar2, p_driver_appt_type in varchar2, p_driver_appt_status in varchar2) as
+ q1 varchar2(4000);
+begin
+ q1 := 'MERGE INTO ' || p_cohort_table  || ' coh 
+USING ( 
+SELECT DISTINCT PAT_ID 
+        ,LOC_ID 
+FROM (SELECT DISTINCT PAT_ID 
+        ,LOC_ID 
+        ,rank() over( 
+                    partition by pat_id  
+                    order by pat_id, contact_date desc 
+                    ) ranking 
+    FROM (SELECT distinct coh.PAT_ID 
+                    ,enc.PAT_ENC_CSN_ID 
+                    ,enc.EFFECTIVE_DATE_DT as contact_date 
+                    ,coh.CUR_PCP_PROV_ID  
+                    ,enc.VISIT_PROV_ID 
+                    ,case when coh.CUR_PCP_PROV_ID =  enc.VISIT_PROV_ID then 1 else 0 end pcp_visit_yn 
+                    ,enc.department_id 
+                    ,loc.loc_id 
+            FROM ' || p_cohort_table  || '         coh 
+            join pat_enc                enc ON coh.PAT_ID = enc.PAT_ID 
+            JOIN ' || p_driver_dept || '       dep on enc.DEPARTMENT_ID = dep.department_id 
+            left join clarity_dep dep2 on dep.department_id = dep2.department_id 
+            left join clarity_loc loc on dep2.rev_loc_id = loc.loc_id 
+            join ' || p_driver_appt_type || '      apt on enc.APPT_PRC_ID = apt.prc_id 
+            where  
+                    enc.effective_date_dt between sysdate - 366 and sysdate  
+                    and enc.enc_type_c = 101 
+                    and (enc.appt_status_c is not null and enc.appt_status_c not in (SELECT APPT_STATUS_C 
+                                                                                            FROM ' || p_driver_appt_status || '
+                                                                                            WHERE APPT_CAT = ''exclude'' )
+                )
+            ) 
+    WHERE 
+        pcp_visit_yn = 1 
+        --add exclusion for emergency depts 
+        and department_id not in (      --Exclude Emergency Care 
+                                    ''70011''       --	SMBP WILSHIRE UC 
+                                        ,''80008''        --	SMBP MARINA DL REY UC 
+                                        --Exclude 1223 16th street 3100 
+                                        ,''70232''            --	GERI SM 3100 
+                                        --Exclude SMBP 1090 
+                                        ,''70216''            --SMBP 10TH FL 1090   
+                                        --exclude WW COMP HLTH STE 525 
+                                        ,''60155''            --	IM CHP MP1 525 
+                                        --WLV EAST WEST CENTER 
+                                        ,''80044''            --	IM EAST WEST MED WLV 
+                                        ,''80106''            --	PET CT IMG WESTLAKE  
+                                        --UCLA Health Torrance Specialty Care 
+                                        ,''80273''            --	EAST WEST TORR STE 302 
+                                ) 
+    ) 
+WHERE    ranking = 1 
+)r 
+ON 
+(COH.PAT_ID = R.PAT_ID) 
+WHEN MATCHED THEN 
+UPDATE SET coh.CLINIC_LAST_PCP = r.LOC_ID'; 
 
-
+EXECUTE IMMEDIATE q1;
+end;
 -- randomization
 
 --upcoming PC appointment 
