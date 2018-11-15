@@ -1,4 +1,8 @@
 
+/***********************************************************************************
+    Create cohort table: only the first time, from then on, we just add new patients
+
+*************************************************************************************/
   CREATE TABLE "XDR_ACP_COHORT" 
    (	"PAT_ID" VARCHAR2(18 BYTE), 
 	"CURRENT_AGE" NUMBER,
@@ -60,7 +64,22 @@
     "APPOINTMENT_CSN" VARCHAR(50)
    )
 
---It needs a section for the driver-specific tables/references
+
+/***********************************************************************************
+    Create temp tables to hold drivers and reference codes use in the process
+
+-- Primary Care Department driver
+-- Diagnoses Codes driver
+-- Final diagnoses codes driver (dx_id)
+-- Patient vital status driver
+-- Encoutner/appoitnment status driver
+-- Clinic-Coordinator driver
+-- Chemotherapy CPT driver
+-- Apporintment types driver
+*************************************************************************************/
+-------------------------------------------
+-- Primary Care Department driver
+-------------------------------------------
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DEPT_DRV(dep.DEPARTMENT_ID NUMBER), LOC_ID number)
 ON COMMIT PRESERVE ROWS;
 
@@ -235,6 +254,9 @@ WHERE dep.DEPARTMENT_ID IN (
 );
 COMMIT;
 
+-------------------------------------------
+-- Diagnoses Codes driver
+-------------------------------------------
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DX_TEMP(ICD_CODE VARCHAR2(10 BYTE), DX_FLAG VARCHAR2(25 BYTE))
 ON COMMIT PRESERVE ROWS;
 
@@ -585,6 +607,10 @@ INSERT INTO XDR_ACP_DX_TEMP VALUES('567.9','PERITONITIS');
 INSERT INTO XDR_ACP_DX_TEMP VALUES('567.23','PERITONITIS');
 COMMIT;
 
+
+-------------------------------------------
+-- Final diagnoses codes driver (dx_id)
+-------------------------------------------
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DX_LOOKUP(DX_ID NUMBER, ICD_CODE VARCHAR2(10 BYTE), DX_FLAG VARCHAR2(25 BYTE))
 ON COMMIT PRESERVE ROWS;
 INSERT INTO XDR_ACP_DX_LOOKUP
@@ -600,6 +626,9 @@ join edg_current_icd10           edg on drv.icd_CODE = edg.CODE
 ;
 COMMIT;
 
+-------------------------------------------
+-- Patient vital status driver
+-------------------------------------------
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_PAT_STATUS(PAT_FLAG_TYPE_C NUMBER)
 ON COMMIT PRESERVE ROWS;
 INSERT INTO XDR_ACP_PAT_STATUS VALUES(6);COMMIT;
@@ -608,6 +637,10 @@ INSERT INTO XDR_ACP_PAT_STATUS VALUES(9);COMMIT;
 INSERT INTO XDR_ACP_PAT_STATUS VALUES(1018);COMMIT;
 INSERT INTO XDR_ACP_PAT_STATUS VALUES(1053);COMMIT;
 
+
+-------------------------------------------
+-- Encoutner/appointnment status driver
+-------------------------------------------
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_APPT_STATUS(appt_status_c NUMBER, appt_cat VARCHAR2(25 BYTE))
 ON COMMIT PRESERVE ROWS;
 INSERT INTO XDR_ACP_APPT_STATUS VALUES(1,'include');COMMIT;
@@ -615,8 +648,9 @@ INSERT INTO XDR_ACP_APPT_STATUS VALUES(3,'exclude');COMMIT;
 INSERT INTO XDR_ACP_APPT_STATUS VALUES(4,'exclude');COMMIT;
 INSERT INTO XDR_ACP_APPT_STATUS VALUES(5,'exclude');COMMIT;
 
-
---Chemotherapy CPT codes
+-------------------------------------------
+-- Chemotherapy CPT driver
+-------------------------------------------
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_CHEMO_CPT(CPT_CODE VARCHAR2(25 BYTE))
 ON COMMIT PRESERVE ROWS;
 INSERT INTO XDR_ACP_CHEMO_CPT VALUES(96401);COMMIT;
@@ -637,7 +671,9 @@ INSERT INTO XDR_ACP_CHEMO_CPT VALUES(96440);COMMIT;
 INSERT INTO XDR_ACP_CHEMO_CPT VALUES(96446);COMMIT;
 INSERT INTO XDR_ACP_CHEMO_CPT VALUES(96450);COMMIT;
 
---appointment type for PC visits
+-------------------------------------------
+-- Apporintment types driver
+-------------------------------------------
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_APPT_TYPE(PRC_ID VARCHAR2(50 BYTE)) ON COMMIT PRESERVE ROWS;
 
 INSERT INTO XDR_ACP_APPT_TYPE(PRC_ID) VALUES('2001');COMMIT;
@@ -700,7 +736,10 @@ INSERT INTO XDR_ACP_APPT_TYPE(PRC_ID) VALUES('4359');COMMIT;
 INSERT INTO XDR_ACP_APPT_TYPE(PRC_ID) VALUES('3476');COMMIT;
 
 
-DROP TABLE  XDR_ACP_CLINICS PURGE;
+-------------------------------------------
+-- Clinic-Coordinator driver
+-------------------------------------------
+-- DROP TABLE  XDR_ACP_CLINICS PURGE;
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_CLINICS(	"LOC_ID" NUMBER(18,0), 
 	"COORDINATOR_ID" VARCHAR2(128 BYTE)
    ) ON COMMIT PRESERVE ROWS;
@@ -745,12 +784,27 @@ INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(2455,'AISPURO, VANESS
 INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(8092,'GARCIA, EVELYN');COMMIT;
 INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6016,'MORRISSEY, KIRA');COMMIT;
 INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6002,'BASCOS, ELAINE');COMMIT;
+
+
+
+
+/***********************************************************************************
+    Script to run 
+*************************************************************************************/
+--------------------------------------
 -- Create denominator
+--------------------------------------
 exec P_ACP_CREATE_DENOMINATOR('XDR_ACP_COHORT','XDR_ACP_APPT_STATUS');
+
+--------------------------------------
 --remove excluded patients
+--------------------------------------
 exec P_ACP_REMOVE_DECEASED('XDR_ACP_COHORT');
 exec P_ACP_REMOVE_RESTRICTED('XDR_ACP_COHORT','XDR_ACP_PAT_STATUS');
+
+--------------------------------------
 --apply problem list dx criterion
+--------------------------------------
 exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CANCER');
 exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CHF');
 exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ALS');
@@ -764,7 +818,10 @@ exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','BLEEDING');
 exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ASCITES');
 exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ENCEPHALOPATHY');
 exec P_ACP_PL_ESDL_DECOMPENSATION('XDR_ACP_COHORT');
+
+--------------------------------------
 --apply encounter dx criterion (3 years)
+--------------------------------------
 exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CANCER');
 exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CHF');
 exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ALS');
@@ -776,17 +833,28 @@ exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','BLEEDING');
 exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ENCEPHALOPATHY');
 exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','HEPATORENAL');
 EXEC P_ACP_DX_ESDL_DECOMPENSATION('XDR_ACP_COHORT');
+
+--------------------------------------
 --apply visit to departments criterion (oncology and nephrology)
+--------------------------------------
 exec P_ACP_DEPT_VISIT('XDR_ACP_COHORT','ONC',1,'CANCER');
 exec P_ACP_DEPT_VISIT('XDR_ACP_COHORT','NEPH',1,'ESRD');
+
+--------------------------------------
 --apply admision for certain conditions (CHF AND COPD)
+--------------------------------------
 exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT','XDR_ACP_DX_TEMP',1,'CHF');
 exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT','XDR_ACP_DX_TEMP',1,'COPD');
+
+--------------------------------------
 --chemotherapy
+--------------------------------------
 exec P_ACP_CHEMO_PROC('XDR_ACP_COHORT','XDR_ACP_CHEMO_CPT',2);
 exec P_ACP_CHEMO_MEDS('XDR_ACP_COHORT','CHEMO',2);
 
+--------------------------------------
 -- MELD
+--------------------------------------
 -- DROP TABLE XDR_ACP_LAB PURGE;
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_LAB(
     PAT_ID VARCHAR2(18 BYTE), 
@@ -818,27 +886,44 @@ ON COMMIT PRESERVE ROWS;
 exec P_ACP_LAB_MELD_TABLE('XDR_ACP_LAB','XDR_ACP_MELD_TABLE');
 exec P_ACP_MELD('XDR_ACP_COHORT','XDR_ACP_MELD_TABLE')
 
+--------------------------------------
 -- EJECTION FRACTION
+--------------------------------------
 
+--------------------------------------
 -- Merge criterion
+--------------------------------------
 exec P_ACP_MERGE_CRITERION('XDR_ACP_COHORT');
+
+--------------------------------------
 -- Age criteria
+--------------------------------------
 exec P_ACP_AGE_CRTIERIA('XDR_ACP_COHORT','75');
 
+--------------------------------------
 --remove not selected patients
+--------------------------------------
 delete from XDR_ACP_COHORT where selected is null;
 
+--------------------------------------
 --CCC and clinic assignment
+--------------------------------------
 exec P_ACP_LOC_LAST_PCP('XDR_ACP_COHORT', 'XDR_ACP_DEPT_DRV', 'XDR_ACP_APPT_TYPE', 'XDR_ACP_APPT_STATUS');
 exec P_ACP_loc_most_visits('XDR_ACP_COHORT', 'XDR_ACP_DEPT_DRV', 'XDR_ACP_APPT_TYPE', 'XDR_ACP_APPT_STATUS');
 exec  P_ACP_COORDINATOR('XDR_ACP_COHORT','XDR_ACP_CLINICS');
 
+--------------------------------------
 -- randomization
+--------------------------------------
 
+--------------------------------------
 --upcoming PC appointment 
+--------------------------------------
 exec P_ACP_APPOINTMENT('XDR_ACP_COHORT', 'XDR_ACP_DEPT_DRV', 'XDR_ACP_APPT_TYPE', 'XDR_ACP_APPT_STATUS');
 
+--------------------------------------
 --drop temp tables
+--------------------------------------
 exec p_acp_clean_up('XDR_ACP_DEPT_DRV');
 exec p_acp_clean_up('XDR_ACP_DX_TEMP');
 exec p_acp_clean_up('XDR_ACP_DX_LOOKUP');
@@ -847,7 +932,15 @@ exec p_acp_clean_up('XDR_ACP_CHEMO_CPT');
 exec p_acp_clean_up('XDR_ACP_LAB');
 exec p_acp_clean_up('XDR_ACP_MELD_TABLE');
 
+
+
+
+/***********************************************************************************
+    Stored Procedures
+*************************************************************************************/
+--------------------------------------
 -- Create denominator
+--------------------------------------
 create or replace procedure p_acp_create_denominator(p_cohort_table in varchar2, p_driver_table in varchar2) as
  q1 varchar2(4000);
 begin
@@ -881,7 +974,9 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
+--------------------------------------
 --remove excluded patients (DECEASED)
+--------------------------------------
 create or replace procedure p_acp_remove_deceased(p_cohort_table in varchar2) as
  q1 varchar2(4000);
 begin
@@ -897,7 +992,9 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
+--------------------------------------
 --remove excluded patients (RESTRICTED)
+--------------------------------------
 create or replace procedure p_acp_remove_restricted(p_cohort_table in varchar2, p_driver_table in varchar2) as
  q1 varchar2(4000);
 begin
@@ -919,8 +1016,9 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
-
+--------------------------------------
 --apply problem list dx criterion
+--------------------------------------
 create or replace procedure P_ACP_PL_DX(p_cohort_table in varchar2, p_driver_table in varchar2, p_dx_flag in varchar2) as
  q1 varchar2(4000);
 begin
@@ -938,7 +1036,9 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
+--------------------------------------
 --apply problem list dx criteria for ESDL decompensation combination
+--------------------------------------
 create or replace procedure P_ACP_PL_ESDL_DECOMPENSATION(p_cohort_table in varchar2) as
  q1 varchar2(4000);
 begin
@@ -956,7 +1056,9 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
+--------------------------------------
 --apply encounter dx criterion (3 years)
+--------------------------------------
 create or replace procedure P_ACP_ENC_DX(p_cohort_table in varchar2, p_driver_table in varchar2, p_dx_flag in varchar2) as
  q1 varchar2(4000);
 begin
@@ -976,8 +1078,9 @@ begin
 EXECUTE IMMEDIATE q1;
 end;
 
-
+--------------------------------------
 --apply problem list dx criteria for ESDL decompensation combination
+--------------------------------------
 create or replace procedure P_ACP_DX_ESDL_DECOMPENSATION(p_cohort_table in varchar2) as
  q1 varchar2(4000);
 begin
@@ -996,8 +1099,9 @@ begin
 end;
 
 
-
+--------------------------------------
 --apply visit to departments criterion (oncology and nephrology)
+--------------------------------------
 create or replace procedure P_ACP_DEPT_VISIT(p_cohort_table in varchar2, p_dept in varchar2, p_years in number, p_criteria in varchar2) as
  q1 varchar2(4000);
 begin
@@ -1023,7 +1127,9 @@ WHERE
  EXECUTE IMMEDIATE q1;
 end;
 
+--------------------------------------
 --apply admision for certain conditions (CHF AND COPD)
+--------------------------------------
 create or replace procedure P_ACP_DEPT_ADMIT(p_cohort_table in varchar2, p_driver_table in varchar2, p_years in number, p_criteria in varchar2) as
  q1 varchar2(4000);
 begin
@@ -1043,8 +1149,9 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
-
+--------------------------------------
 -- MELD: pull labs
+--------------------------------------
 create or replace procedure P_ACP_LAB_PULL(p_table_name in varchar2, p_cohort_table in varchar2, p_driver_table  in varchar2, p_timeframe in number) as
  q1 varchar2(6000);
  q2 varchar2(4000);
@@ -1081,10 +1188,11 @@ q2 := 'CREATE INDEX ' || p_table_name || '_IX_RSLT_FLAG ON ' || p_table_name || 
 
 EXECUTE IMMEDIATE q1;
 EXECUTE IMMEDIATE q2;
-
 end;
 
+--------------------------------------
 -- MELD: processed labs
+--------------------------------------
 create or replace procedure P_ACP_LAB_MELD_TABLE( p_lab_table in varchar2, p_meld_table in varchar2) as
  q1 varchar2(8000);
 
@@ -1191,7 +1299,9 @@ and diff_creatinine = last_creatinine';
 EXECUTE IMMEDIATE q1; 
 end;
 
+--------------------------------------
 -- MELD: apply MELD criteria
+--------------------------------------
 create or replace procedure P_ACP_MELD(p_cohort_table in varchar2, p_lab_table in varchar2) as
  q1 varchar2(4000);
 begin
@@ -1247,8 +1357,9 @@ where meld + 1.32 * (137 - sodium) - (0.033 * meld * (137 - sodium)) > 18) ';
  EXECUTE IMMEDIATE q1;
 end;
 
---Chemotherapy
-
+--------------------------------------
+--Chemotherapy Procedures (CPT)
+--------------------------------------
 create or replace procedure P_ACP_CHEMO_PROC(p_cohort_table in varchar2, p_driver_table  in varchar2, p_timeframe in number) as
  q1 varchar2(4000);
 
@@ -1280,6 +1391,10 @@ begin
 EXECUTE IMMEDIATE q1; 
 EXECUTE IMMEDIATE 'COMMIT';  
 end;
+
+--------------------------------------
+-- Chemotherapy Medications
+--------------------------------------
 create or replace procedure P_ACP_CHEMO_MEDS(p_cohort_table in varchar2, p_med_keyword  in varchar2, p_timeframe in number) as
  q1 varchar2(4000);
 
@@ -1330,10 +1445,14 @@ EXECUTE IMMEDIATE q1;
 EXECUTE IMMEDIATE 'COMMIT';  
 end;
 
+--------------------------------------
 -- EJECTION FRACTION
+--------------------------------------
 
 
+--------------------------------------
 -- Merge criterion
+--------------------------------------
 create or replace procedure P_ACP_MERGE_CRITERION(p_cohort_table in varchar2) as
  q1 varchar2(4000);
  q2 varchar2(4000);
@@ -1404,10 +1523,11 @@ EXECUTE IMMEDIATE q5;
 EXECUTE IMMEDIATE 'COMMIT'; 
 EXECUTE IMMEDIATE q6; 
 EXECUTE IMMEDIATE 'COMMIT'; 
-
 end;
 
+--------------------------------------
 -- Age criteria
+--------------------------------------
 create or replace procedure P_ACP_AGE_CRTIERIA(p_table_name in varchar2, p_age_limit in varchar2) as
  q1 varchar2(4000);
 begin
@@ -1425,11 +1545,14 @@ begin
 EXECUTE IMMEDIATE q1;
 end; 
 
+--------------------------------------
+--remove patient not selected
+--------------------------------------
 
---remove excluded patients (DECEASED)
 
---CCC and clinic assignment
-
+--------------------------------------
+---- Clinic attribution: clinic where last seen by PCP
+--------------------------------------
 create or replace procedure P_ACP_loc_last_pcp(p_cohort_table in varchar2, p_driver_dept in varchar2, p_driver_appt_type in varchar2, p_driver_appt_status in varchar2) as
  q1 varchar2(4000);
 begin
@@ -1494,7 +1617,9 @@ UPDATE SET coh.CLINIC_LAST_PCP = r.LOC_ID';
 EXECUTE IMMEDIATE q1;
 end;
 
-
+--------------------------------------
+-- Clinic attribution: clinic with the most visits
+--------------------------------------
 create or replace procedure P_ACP_loc_most_visits(p_cohort_table in varchar2, p_driver_dept in varchar2, p_driver_appt_type in varchar2, p_driver_appt_status in varchar2) as
  q1 varchar2(4000);
 begin
@@ -1558,6 +1683,9 @@ UPDATE SET coh.clinic_most_visits = r.LOC_ID';
 EXECUTE IMMEDIATE q1;
 end;
 
+--------------------------------------
+---- Clinic attribution: assing clinic
+--------------------------------------
 create or replace procedure P_ACP_CLINIC(p_table_name in varchar2) as
  q1 varchar2(4000);
 begin
@@ -1567,7 +1695,10 @@ begin
 EXECUTE IMMEDIATE q1;
 end; 
 
---ASSIGN CARE COORDIANTORR  
+
+--------------------------------------
+---- Care Coordinator attribution
+--------------------------------------
 create or replace procedure P_ACP_COORDINATOR(p_cohort_table in varchar2, p_driver_table in varchar2) as
  q1 varchar2(4000);
 begin
@@ -1593,10 +1724,13 @@ update SET coh.coordinator_id = r.coordinator_id';
 EXECUTE IMMEDIATE q1;
 end; 
 
-
+--------------------------------------
 -- randomization
+--------------------------------------
 
+--------------------------------------
 --upcoming PC appointment 
+--------------------------------------
 create or replace procedure P_ACP_APPOINTMENT(p_cohort_table in varchar2, p_driver_dept in varchar2, p_driver_appt_type in varchar2, p_driver_appt_status in varchar2) as
  q1 varchar2(4000);
 begin
@@ -1638,9 +1772,9 @@ SELECT DISTINCT coh.pat_id
   EXECUTE IMMEDIATE q1;
 end; 
 
-
---drop tEmp tables
-
+--------------------------------------
+-- Drop temp tables
+--------------------------------------
 create or replace procedure p_acp_clean_up(p_table_name in varchar2) as
  q1 varchar2(4000);
 begin
