@@ -45,7 +45,8 @@
 	"CHF" NUMBER, 
 	"ESRD" NUMBER, 
     "ALS" NUMBER, 
-    "AGE" NUMBER
+    "AGE" NUMBER,
+    "SELECTED" NUMBER
    )
 
 --It needs a section for the driver-specific tables/references
@@ -586,11 +587,20 @@ join edg_current_icd10           edg on drv.icd_CODE = edg.CODE
 ;
 COMMIT;
 
-CREATE GLOBAL TEMPORARY TABLE XDR_ACP_PAT_STATUS(appt_status_c NUMBER)
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_PAT_STATUS(PAT_FLAG_TYPE_C NUMBER)
 ON COMMIT PRESERVE ROWS;
-INSERT INTO XDR_ACP_PAT_STATUS VALUES(3);COMMIT;
-INSERT INTO XDR_ACP_PAT_STATUS VALUES(4);COMMIT;
-INSERT INTO XDR_ACP_PAT_STATUS VALUES(5);COMMIT;
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(6);COMMIT;
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(8);COMMIT;
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(9);COMMIT;
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(1018);COMMIT;
+INSERT INTO XDR_ACP_PAT_STATUS VALUES(1053);COMMIT;
+
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_APPT_STATUS(appt_status_c NUMBER)
+ON COMMIT PRESERVE ROWS;
+INSERT INTO XDR_ACP_APPT_STATUS VALUES(3);COMMIT;
+INSERT INTO XDR_ACP_APPT_STATUS VALUES(4);COMMIT;
+INSERT INTO XDR_ACP_APPT_STATUS VALUES(5);COMMIT;
+
 
 --Chemotherapy CPT codes
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_CHEMO_CPT(CPT_CODE VARCHAR2(25 BYTE))
@@ -615,62 +625,89 @@ INSERT INTO XDR_ACP_CHEMO_CPT VALUES(96450);COMMIT;
 
 
 -- Create denominator
-exec P_ACP_CREATE_DENOMINATOR('XDR_ACP_COHORT');        --117 seconds
+exec P_ACP_CREATE_DENOMINATOR('XDR_ACP_COHORT','XDR_ACP_APPT_STATUS');
 --remove excluded patients
-exec P_ACP_REMOVE_DECEASED('XDR_ACP_COHORT');           --657 seconds
-exec P_ACP_REMOVE_RESTRICTED('XDR_ACP_COHORT');         -- 5 seconds
+exec P_ACP_REMOVE_DECEASED('XDR_ACP_COHORT');
+exec P_ACP_REMOVE_RESTRICTED('XDR_ACP_COHORT','XDR_ACP_PAT_STATUS');
 --apply problem list dx criterion
-exec P_ACP_PL_DX('XDR_ACP_COHORT','CANCER');            -- 5 seconds
-exec P_ACP_PL_DX('XDR_ACP_COHORT','CHF');               -- 2 seconds
-exec P_ACP_PL_DX('XDR_ACP_COHORT','ALS');               -- .7 seconds
-exec P_ACP_PL_DX('XDR_ACP_COHORT','COPD');               -- 13 seconds
-exec P_ACP_PL_DX('XDR_ACP_COHORT','COPD_SPO2');               -- 1.3 seconds
-exec P_ACP_PL_DX('XDR_ACP_COHORT','CIRRHOSIS');               -- 9 seconds
-exec P_ACP_PL_DX('XDR_ACP_COHORT','ESRD');               --  5 seconds
-exec P_ACP_PL_DX('XDR_ACP_COHORT','PERITONITIS');               -- 1 seconds
-exec P_ACP_PL_DX('XDR_ACP_COHORT','HEPATORENAL');               -- .3 seconds
-exec P_ACP_PL_DX('XDR_ACP_COHORT','BLEEDING');               -- .3 seconds
-exec P_ACP_PL_DX('XDR_ACP_COHORT','ASCITES');               -- 2 seconds
-exec P_ACP_PL_DX('XDR_ACP_COHORT','ENCEPHALOPATHY');               -- 1 seconds
-exec P_ACP_PL_ESDL_DECOMPENSATION('XDR_ACP_COHORT');               -- 0 seconds
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CANCER');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CHF');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ALS');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','COPD');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','COPD_SPO2');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CIRRHOSIS');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ESRD');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','PERITONITIS');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','HEPATORENAL');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','BLEEDING');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ASCITES');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ENCEPHALOPATHY');
+exec P_ACP_PL_ESDL_DECOMPENSATION('XDR_ACP_COHORT');
 --apply encounter dx criterion (3 years)
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','CANCER');               -- 284 seconds
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','CHF');                  -- 150 secnds
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','ALS');                  -- 4 seconds
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','CIRRHOSIS');            --103 seconds
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','ESRD');                 --72 seconds
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','PERITONITIS');          -- 4 seconds
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','ASCITES');              --10 seconds
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','BLEEDING');             --2 seconds
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','ENCEPHALOPATHY');       --3 seconds
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','HEPATORENAL');          --.5 seconds
-EXEC P_ACP_DX_ESDL_DECOMPENSATION('XDR_ACP_COHORT');        --.1 seconds
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CANCER');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CHF');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ALS');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CIRRHOSIS');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ESRD');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','PERITONITIS');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ASCITES');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','BLEEDING');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ENCEPHALOPATHY');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','HEPATORENAL');
+EXEC P_ACP_DX_ESDL_DECOMPENSATION('XDR_ACP_COHORT');
 --apply visit to departments criterion (oncology and nephrology)
-exec P_ACP_DEPT_VISIT('XDR_ACP_COHORT','ONC',1,'CANCER');       --110 seconds
-exec P_ACP_DEPT_VISIT('XDR_ACP_COHORT','NEPH',1,'ESRD');            --8 seconds
+exec P_ACP_DEPT_VISIT('XDR_ACP_COHORT','ONC',1,'CANCER');
+exec P_ACP_DEPT_VISIT('XDR_ACP_COHORT','NEPH',1,'ESRD');
 --apply admision for certain conditions (CHF AND COPD)
-exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT',1,'CHF');                --50 seconds
-exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT',1,'COPD');               --40 seconds
+exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT','XDR_ACP_DX_TEMP',1,'CHF');
+exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT','XDR_ACP_DX_TEMP',1,'COPD');
 --chemotherapy
-exec P_ACP_CHEMO_PROC('XDR_ACP_COHORT','XDR_ACP_CHEMO_CPT',2);      --568 seconds
-exec P_ACP_CHEMO_MEDS('XDR_ACP_COHORT','CHEMO',2);                  --260 seconds
+exec P_ACP_CHEMO_PROC('XDR_ACP_COHORT','XDR_ACP_CHEMO_CPT',2);
+exec P_ACP_CHEMO_MEDS('XDR_ACP_COHORT','CHEMO',2);
 
 -- MELD
+-- DROP TABLE XDR_ACP_LAB PURGE;
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_LAB(
+    PAT_ID VARCHAR2(18 BYTE), 
+	PAT_ENC_CSN_ID NUMBER(18,0), 
+	PROC_CODE VARCHAR2(91 BYTE), 
+	COMPONENT_ID NUMBER(18,0), 
+	RESULT_TIME DATE, 
+	LAB_FLAG VARCHAR2(50 BYTE),
+	HARM_NUM_VAL NUMBER
+    ) 
+ ON COMMIT PRESERVE ROWS;
 exec P_ACP_LAB_PULL('XDR_ACP_LAB','XDR_ACP_COHORT','jsanz.xdr_WALLING_LABDRV',3);
-exec P_ACP_LAB_MELD_TABLE('XDR_ACP_MELD_TABLE');                    --340 seconds
+-- DROP TABLE XDR_ACP_MELD_TABLE PURGE;
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_MELD_TABLE ("PAT_ID" VARCHAR2(18 BYTE)
+       ,"ALBUMIN" NUMBER
+       ,"ALBUMIN_RESULT_TIME" DATE
+       ,"BILIRUBIN" NUMBER
+       ,"BILIRUBIN_RESULT_TIME" DATE
+       ,"CREATININE" NUMBER
+       ,"CREATININE_RESULT_TIME" DATE
+       ,"INR" NUMBER
+       ,"INR_RESULT_TIME" DATE
+       ,"LATEST_LAB" DATE
+       ,"SODIUM" NUMBER
+       ,"SODIUM_RESULT_TIME" DATE
+   ) 
+ON COMMIT PRESERVE ROWS;
+
+exec P_ACP_LAB_MELD_TABLE('XDR_ACP_LAB','XDR_ACP_MELD_TABLE');
 exec P_ACP_MELD('XDR_ACP_COHORT','XDR_ACP_MELD_TABLE')
 -- EJECTION FRACTION
 
 -- Merge criterion
-exec P_ACP_MERGE_CRITERION('XDR_ACP_COHORT');               --0.1 seconds
+exec P_ACP_MERGE_CRITERION('XDR_ACP_COHORT');
 -- Age criteria
-exec P_ACP_AGE_CRTIERIA('XDR_ACP_COHORT','75');             --0.1 seconds
+exec P_ACP_AGE_CRTIERIA('XDR_ACP_COHORT','75');
 -- randomization
 
 
 
 -- Create denominator
-create or replace procedure p_acp_create_denominator(p_cohort_table in varchar2) as
+create or replace procedure p_acp_create_denominator(p_cohort_table in varchar2, p_driver_table in varchar2) as
  q1 varchar2(4000);
 begin
 
@@ -691,7 +728,9 @@ begin
                 enc.effective_date_dt between sysdate - 366 and sysdate 
                 and floor(months_between(TRUNC(sysdate), pat.birth_date)/12) >= 18
                 and enc.enc_type_c = 101
-                and (enc.appt_status_c is not null and enc.appt_status_c not in (3,4,5))
+                and (enc.appt_status_c is not null and enc.appt_status_c not in (SELECT PAT_FLAG_TYPE_C
+                                                                                FROM ' || p_driver_table || ')
+                    ) 
                 GROUP BY enc.PAT_ID,
                     PAT.BIRTH_DATE)x
         JOIN clarity.patient                        pat   ON x.pat_id = pat.pat_id
@@ -710,12 +749,13 @@ begin
             FROM ' || p_cohort_table  || '     coh 
             JOIN patient            pat on coh.pat_id = pat.pat_id 
             WHERE 
-                i2b2.f_death(pat.pat_id,2,1)  = ''Known Deceased'')';
+                i2b2.f_death(pat.pat_id,2,1)  = ''Known Deceased''
+            )';
  EXECUTE IMMEDIATE q1;
 end;
 
 --remove excluded patients (RESTRICTED)
-create or replace procedure p_acp_remove_restricted(p_cohort_table in varchar2, p_status_table) as
+create or replace procedure p_acp_remove_restricted(p_cohort_table in varchar2, p_driver_table in varchar2) as
  q1 varchar2(4000);
 begin
 
@@ -725,8 +765,8 @@ begin
                 SELECT coh.pat_id  
                 FROM ' || p_cohort_table ||'                   coh 
                 JOIN patient_fyi_flags           flags ON coh.pat_id = flags.patient_id 
-                JOIN ' || p_status_table || '     st   on flags.appt_status_c = st.appt_status_c
-                UNION
+                JOIN ' || p_driver_table || '     st   on flags.PAT_FLAG_TYPE_C = st.PAT_FLAG_TYPE_C 
+                UNION 
                 SELECT coh.pat_id  
                 FROM ' || p_cohort_table ||'                   coh 
                 LEFT JOIN patient_3                         ON coh.pat_id = patient_3.pat_id 
@@ -738,20 +778,18 @@ end;
 
 
 --apply problem list dx criterion
-create or replace procedure P_ACP_PL_DX(p_cohort_table in varchar2, p_dx_flag in varchar2) as
+create or replace procedure P_ACP_PL_DX(p_cohort_table in varchar2, p_driver_table in varchar2, p_dx_flag in varchar2) as
  q1 varchar2(4000);
 begin
-
- q1 := '
-  UPDATE ' || p_cohort_table  || 
-  ' SET PL_' || p_dx_flag || ' = 1
+ q1 := 'UPDATE ' || p_cohort_table  || 
+  ' SET PL_' || p_dx_flag || ' = 1 
   WHERE 
-    PAT_ID IN (
-                SELECT DISTINCT coh.pat_id
-                FROM ' || p_cohort_table  || '          coh 
+    PAT_ID IN ( 
+                SELECT DISTINCT coh.pat_id 
+                FROM ' || p_cohort_table  || '          coh  
                 JOIN problem_list                     pl    ON coh.pat_id = pl.pat_id AND pl.rec_archived_yn = ''N'' 
                 JOIN zc_problem_status                zps   ON pl.problem_status_c = zps.problem_status_c 
-                JOIN JSANZ.js_xdr_WALLING_DX_LOOKUP   drv   ON pl.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || '''
+                JOIN ' || p_driver_table ||'   drv   ON pl.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || ''' 
   where  
         zps.name = ''Active'')';
  EXECUTE IMMEDIATE q1;
@@ -843,7 +881,7 @@ WHERE
 end;
 
 --apply admision for certain conditions (CHF AND COPD)
-create or replace procedure P_ACP_DEPT_ADMIT(p_cohort_table in varchar2, p_years in number, p_criteria in varchar2) as
+create or replace procedure P_ACP_DEPT_ADMIT(p_cohort_table in varchar2, p_driver_table in varchar2, p_years in number, p_criteria in varchar2) as
  q1 varchar2(4000);
 begin
  q1 := 'UPDATE ' || p_cohort_table  || ' 
@@ -854,7 +892,7 @@ begin
                 FROM ' || p_cohort_table  || '          coh 
                 JOIN pat_enc_hsp                     enc ON coh.pat_id = enc.pat_id 
                 JOIN pat_enc_dx                      dx ON enc.pat_enc_csn_id = dx.pat_enc_csn_id 
-                join JSANZ.js_xdr_walling_dx_lookup  drv on dx.dx_id = drv.dx_id AND drv.DX_FLAG = ''' || p_criteria || ''' 
+                join ' || p_driver_table ||'  drv on dx.dx_id = drv.dx_id AND drv.DX_FLAG = ''' || p_criteria || ''' 
                 WHERE 
                     (coh.PL_' || p_criteria || ' = 1 OR COH.DX_' || p_criteria || ' = 1) 
                     AND dx.contact_date between sysdate - (365.25 * '|| p_years ||' ) AND sysdate
@@ -864,22 +902,8 @@ end;
 
 
 -- MELD: pull labs
-
-DROP TABLE XDR_ACP_LAB PURGE;
-CREATE GLOBAL TEMPORARY TABLE XDR_ACP_LAB(
-    PAT_ID VARCHAR2(18 BYTE), 
-	PAT_ENC_CSN_ID NUMBER(18,0), 
-	PROC_CODE VARCHAR2(91 BYTE), 
-	COMPONENT_ID NUMBER(18,0), 
-	RESULT_TIME DATE, 
-	LAB_FLAG VARCHAR2(50 BYTE),
-	HARM_NUM_VAL NUMBER
-    ) 
- ON COMMIT PRESERVE ROWS;
-
-
 create or replace procedure P_ACP_LAB_PULL(p_table_name in varchar2, p_cohort_table in varchar2, p_driver_table  in varchar2, p_timeframe in number) as
- q1 varchar2(4000);
+ q1 varchar2(6000);
  q2 varchar2(4000);
 begin
 
@@ -910,7 +934,7 @@ begin
               AND o.order_proc_id IS NOT NULL 
               AND p.order_time BETWEEN SYSDATE - (365.25 * ' || p_timeframe || ') AND SYSDATE';
 
-q2 := 'CREATE INDEX ' || p_table_name || '_IX_RESULT_FLAG ON ' || p_table_name || '(result_time,LAB_FLAG)';
+q2 := 'CREATE INDEX ' || p_table_name || '_IX_RSLT_FLAG ON ' || p_table_name || '(result_time,LAB_FLAG)';
 
 EXECUTE IMMEDIATE q1;
 EXECUTE IMMEDIATE q2;
@@ -918,28 +942,11 @@ EXECUTE IMMEDIATE q2;
 end;
 
 -- MELD: processed labs
-create or replace procedure P_ACP_LAB_MELD_TABLE(p_cohort_table in varchar2, p_lab_table in varchar2) as
- q1 varchar2(4000);
- q2 varchar2(8000);
+create or replace procedure P_ACP_LAB_MELD_TABLE( p_lab_table in varchar2, p_meld_table in varchar2) as
+ q1 varchar2(8000);
 
 begin
-
-q1 := 'CREATE GLOBAL TEMPORARY TABLE ' || p_cohort_table  || ' ("PAT_ID" VARCHAR2(18 BYTE)
-        ,"ALBUMIN" NUMBER
-        ,"ALBUMIN_RESULT_TIME" DATE
-        ,"BILIRUBIN" NUMBER
-        ,"BILIRUBIN_RESULT_TIME" DATE
-        ,"CREATININE" NUMBER
-        ,"CREATININE_RESULT_TIME" DATE
-        ,"INR" NUMBER
-        ,"INR_RESULT_TIME" DATE
-        ,"LATEST_LAB" DATE
-        ,"SODIUM" NUMBER
-        ,"SODIUM_RESULT_TIME" DATE
-    ) 
- ON COMMIT PRESERVE ROWS';
-
-q2 :=  'INSERT INTO ' || p_cohort_table  || ' (PAT_ID,ALBUMIN,ALBUMIN_RESULT_TIME,BILIRUBIN,BILIRUBIN_RESULT_TIME,CREATININE,CREATININE_RESULT_TIME,INR,INR_RESULT_TIME,LATEST_LAB,SODIUM,SODIUM_RESULT_TIME)
+q1 :=  'INSERT INTO ' || p_meld_table  || ' (PAT_ID,ALBUMIN,ALBUMIN_RESULT_TIME,BILIRUBIN,BILIRUBIN_RESULT_TIME,CREATININE,CREATININE_RESULT_TIME,INR,INR_RESULT_TIME,LATEST_LAB,SODIUM,SODIUM_RESULT_TIME)
 select pat_id
         ,ALBUMIN
         ,ALBUMIN_RESULT_TIME
@@ -1039,9 +1046,6 @@ and diff_sodium = last_sodium
 and diff_albumin = last_albumin
 and diff_creatinine = last_creatinine';
 EXECUTE IMMEDIATE q1; 
-EXECUTE IMMEDIATE 'COMMIT';   
-EXECUTE IMMEDIATE q2;
-EXECUTE IMMEDIATE 'COMMIT';  
 end;
 
 -- MELD: apply MELD criteria
