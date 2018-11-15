@@ -61,7 +61,11 @@
     "RANDOMIZATION_ARM" VARCHAR(50),
     "COORDINATOR_ID" VARCHAR2(250 BYTE),
     "APPOINTMENT_DATE" DATE,
-    "APPOINTMENT_CSN" VARCHAR(50)
+    "APPOINTMENT_CSN" VARCHAR(50),
+    "AD_ALL" NUMBER,
+    "AD_THREE" NUMBER,
+    "POLST_ALL" NUMBER,
+    "POLST_THREE" NUMBER
    )
 
 
@@ -786,7 +790,35 @@ INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6016,'MORRISSEY, KIRA
 INSERT INTO XDR_ACP_CLINICS (LOC_ID,COORDINATOR_ID) VALUES(6002,'BASCOS, ELAINE');COMMIT;
 
 
+--------------------------------------
+--AD-POLST
+--------------------------------------
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_ADPOLST("DOC_INFO_TYPE_C" VARCHAR2(10)
+,"DOC_GROUP" VARCHAR2(10)
+   ) ON COMMIT PRESERVE ROWS;
 
+INSERT INTO XDR_ACP_ADPOLST VALUES('11','AD');COMMIT;        --	Power of Attorney
+INSERT INTO XDR_ACP_ADPOLST VALUES('300052','AD');COMMIT;	--Advance Directive Enduring
+INSERT INTO XDR_ACP_ADPOLST VALUES('10','AD');COMMIT;	    --Advance Directives and Living Will
+INSERT INTO XDR_ACP_ADPOLST VALUES('200068','POLST');COMMIT;	--DNR (Do Not Resuscitate) Documentation
+INSERT INTO XDR_ACP_ADPOLST VALUES('300058','POLST');COMMIT;	---POLST
+
+
+
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_RECORD_STATE("RECORD_STATE_C" NUMBER) ON COMMIT PRESERVE ROWS;
+INSERT INTO XDR_ACP_RECORD_STATE 
+SELECT RECORD_STATE_C
+FROM ZC_RECORD_STATE
+WHERE RECORD_STATE_C = 2;
+COMMIT;
+
+
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DOC_STATUS("DOC_STAT_C" NUMBER) ON COMMIT PRESERVE ROWS;
+INSERT INTO XDR_ACP_DOC_STATUS 
+SELECT DOC_STAT_C
+FROM ZC_DOC_STAT
+WHERE DOC_STAT_C = 35;       --35 - Error
+COMMIT;
 
 /***********************************************************************************
     Script to run 
@@ -904,6 +936,14 @@ exec P_ACP_AGE_CRTIERIA('XDR_ACP_COHORT','75');
 --remove not selected patients
 --------------------------------------
 delete from XDR_ACP_COHORT where selected is null;
+
+
+
+--------------------------------------
+--AD-POLST
+--------------------------------------
+exec P_ACP_ADPOLST('XDR_ACP_COHORT', 'XDR_ACP_ADPOLST', 'XDR_ACP_RECORD_STATE', 'XDR_ACP_DOC_STATUS');
+
 
 --------------------------------------
 --CCC and clinic assignment
@@ -1549,6 +1589,67 @@ end;
 --remove patient not selected
 --------------------------------------
 
+
+
+--------------------------------------
+--AD-POLST
+--------------------------------------
+create or replace procedure P_ACP_ADPOLST(p_cohort_table in varchar2, p_driver_adpolst in varchar2, p_driver_record_stat in varchar2, p_driver_doc_stat in varchar2) as
+ q1 varchar2(4000);
+begin
+ q1 :=  'MERGE INTO ' || p_cohort_table ||' coh 
+ USING ( 
+SELECT DISTINCT PAT_ID 
+            ,CASE WHEN POLST_ALL = 0 OR POLST_ALL IS NULL THEN 0 ELSE 1 END POLST_ALL 
+            ,CASE WHEN AD_ALL = 0 OR AD_ALL IS NULL THEN 0 ELSE 1 END AD_ALL 
+            ,CASE WHEN POLST_THREE = 0 OR POLST_THREE IS NULL THEN 0 ELSE 1 END POLST_THREE 
+            ,CASE WHEN AD_THREE = 0 OR AD_THREE IS NULL THEN 0 ELSE 1 END AD_THREE 
+FROM ( 
+        SELECT PAT_ID 
+                ,SUM(POLST_ALL) AS POLST_ALL 
+                ,SUM(AD_ALL) AS AD_ALL 
+                ,SUM(POLST_THREE) AS POLST_THREE 
+                ,SUM(AD_THREE) AS AD_THREE 
+        FROM ( 
+                SELECT DISTINCT PAT_ID 
+                        ,CASE WHEN DOC_GROUP = ''POLST'' THEN 1 ELSE 0 END POLST_ALL 
+                        ,CASE WHEN DOC_GROUP  = ''AD'' THEN 1 ELSE 0 END AD_ALL 
+                        ,CASE WHEN DOC_GROUP = ''POLST'' and three_year_ad_polst = 1 THEN 1 ELSE 0 END POLST_THREE 
+                        ,CASE WHEN DOC_GROUP  = ''AD'' and three_year_ad_polst = 1 THEN 1 ELSE 0 END AD_THREE 
+                FROM (SELECT distinct coh.pat_id 
+                                ,bb.doc_info_id 
+                                ,bb.SCAN_FILE 
+                                ,BT.DOC_GROUP 
+                                ,case when bb.doc_recv_time between sysdate - (365.25 *3 ) AND sysdate then 1 else 0 end three_year_ad_polst 
+                        FROM ' || p_cohort_table ||'          COH   
+                        join DOC_INFORMATION                    BB on coh.PAT_ID = BB.DOC_PT_ID 
+                        join ' || p_driver_adpolst || '        BT on BB.DOC_INFO_TYPE_C = BT.DOC_INFO_TYPE_C 
+                        WHERE  
+                            BB.IS_SCANNED_YN = ''Y''  
+                            -- We noticed that in the case of AD-POLST documents, there were instances where the docs had been deleted 
+                            and ( 
+                                bb.RECORD_STATE_C IS NULL 
+                                OR bb.RECORD_STATE_C not in (SELECT RECORD_STATE_C FROM ' || p_driver_record_stat || ') 
+                                )-- Deleted 
+                            and ( 
+                                bb.DOC_STAT_C IS NULL 
+                                OR bb.DOC_STAT_C NOT IN (SELECT DOC_STAT_C FROM ' || p_driver_doc_stat || ') 
+                                )-- Error 
+                            and bb.DOC_REVOK_DT is null) 
+                ) 
+            GROUP BY PAT_ID 
+    ) 
+ ) R
+ ON(COH.PAT_ID = R.PAT_ID) 
+ WHEN MATCHED THEN 
+ UPDATE SET  
+ coh.AD_ALL = r.AD_ALL 
+ ,coh.AD_THREE = r.AD_THREE 
+ ,coh.POLST_ALL = r.POLST_ALL 
+ ,coh.POLST_THREE = r.POLST_THREE';
+
+EXECUTE IMMEDIATE q1;
+end;
 
 --------------------------------------
 ---- Clinic attribution: clinic where last seen by PCP
