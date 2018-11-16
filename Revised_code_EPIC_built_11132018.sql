@@ -921,7 +921,17 @@ exec P_ACP_MELD('XDR_ACP_COHORT','XDR_ACP_MELD_TABLE')
 --------------------------------------
 -- EJECTION FRACTION
 --------------------------------------
-
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_NARR (	"PAT_ID" VARCHAR2(18 BYTE), 
+	"ACC_NUM" VARCHAR2(254 BYTE), 
+	"ORDER_PROC_ID" NUMBER(18,0) NOT NULL ENABLE, 
+	"NARR_LINE" NUMBER(38,0) NOT NULL ENABLE, 
+	"NARR_NARRATIVE" VARCHAR2(4000 BYTE), 
+	"ORDER_TIME" DATE, 
+	"ORD_VALUE" VARCHAR2(254 BYTE)
+   ) ON COMMIT PRESERVE ROWS;
+   
+exec P_ACP_EF_NARR('XDR_ACP_NARR','XDR_ACP_COHORT',3);
+EXEC P_ACP_EF_FLAG('XDR_ACP_COHORT','XDR_ACP_NARR');
 --------------------------------------
 -- Merge criterion
 --------------------------------------
@@ -971,6 +981,7 @@ exec p_acp_clean_up('XDR_ACP_PAT_STATUS');
 exec p_acp_clean_up('XDR_ACP_CHEMO_CPT');
 exec p_acp_clean_up('XDR_ACP_LAB');
 exec p_acp_clean_up('XDR_ACP_MELD_TABLE');
+exec p_acp_clean_up('XDR_ACP_NARR');
 
 
 
@@ -1488,8 +1499,109 @@ end;
 --------------------------------------
 -- EJECTION FRACTION
 --------------------------------------
+   create or replace procedure P_ACP_EF_NARR(p_table_name in varchar2, p_cohort_table in varchar2, p_timeframe in number) as
+ q1 varchar2(6000);
+begin
+
+ q1 := 'INSERT INTO ' || p_table_name || '(PAT_ID,ACC_NUM,ORDER_PROC_ID,NARR_LINE, NARR_NARRATIVE, ORDER_TIME, ORD_VALUE) 
+   SELECT DISTINCT opr.pat_id 
+               ,opr.acc_num 
+               ,opr.order_proc_id 
+               ,nar.line           AS narr_line 
+               ,nar.narrative      AS narr_narrative 
+		   ,order_time 
+		   ,ord_value 
+  FROM (SELECT DISTINCT coh.pat_id 
+               ,opr.order_proc_id 
+               ,opr.order_time 
+                ,acc.acc_num 
+               ,res.line 
+               ,res.ord_value 
+  FROM ' || p_cohort_table || '                    coh 
+  JOIN order_proc               		opr ON coh.pat_id = opr.pat_id 
+  LEFT JOIN order_results       res ON opr.order_proc_id = res.order_proc_id 
+  LEFT JOIN order_rad_acc_num   acc ON opr.order_proc_id = acc.order_proc_id 
+  WHERE  
+  		(coh.pl_chf = 1 or coh.dx_chf = 1) 
+        AND opr.order_status_c = 5                     				
+        AND OPR.ORDER_TYPE_C = 29 
+		AND opr.result_time between SYSDATE - (365.25 * ' || p_timeframe || ') AND SYSDATE)                      opr 
+  JOIN order_narrative  nar ON opr.order_proc_id = nar.order_proc_id 
+  WHERE trim(nar.narrative) IS NOT NULL';
+
+EXECUTE IMMEDIATE q1;
+
+end;
 
 
+ create or replace procedure P_ACP_EF_FLAG(p_cohort_table in varchar2, p_narr_table in varchar2) as
+ q1 varchar2(4000);
+
+begin
+ q1 := 'UPDATE ' || p_cohort_table  || ' 
+  SET EF = 1  
+  WHERE  
+    PAT_ID IN ( 
+    SELECT distinct PAT_ID 
+ from ( 
+ SELECT PAT_ID 
+		        ,ORDER_PROC_ID 
+		        ,ORDER_TIME 
+		        ,CASE 
+				WHEN 
+					ORD_VALUE IS NULL 
+				THEN TEST_VALUES 
+				ELSE (CASE 
+						WHEN	REGEXP_LIKE ( ORD_VALUE	,''\+.\-'',''i'' ) 
+						THEN TO_CHAR(TO_NUMBER(REGEXP_SUBSTR(ORD_VALUE,''[1-9]\d*(\.\,\d+)?''),''9999999999D9999999999'',''NLS_NUMERIC_CHARACTERS = ''''.,'''''') - 5) 
+						ELSE COALESCE(REGEXP_SUBSTR(ORD_VALUE,''[1-9]\d*(\.\,\d+)?''),REGEXP_SUBSTR(ORD_VALUE,''?[[:digit:],.]*$'') ) 
+					END)END AS LVEF_FINAL_VALUE 
+		        ,TEST_VALUES NARR_VALUE 
+		        ,ORD_VALUE 
+		        ,NARR_AGG 
+		    FROM  ( 
+			SELECT PAT_ID 
+			      ,ORDER_PROC_ID 
+			      ,ORDER_TIME 
+			      ,ORD_VALUE 
+			      ,TRIM(	CASE 
+					WHEN 
+						REGEXP_LIKE(SUBSTR(NARR_AGG,REGEXP_INSTR(LOWER(NARR_AGG),''\d++.(to|-).\d++.(|^%)'',5),8),''(to|-)'',''i'') 
+					THEN SUBSTR(NARR_AGG,REGEXP_INSTR(LOWER(NARR_AGG),''\d++.(to|-).\d++.(|^%)'',5),2) 
+					ELSE SUBSTR(NARR_AGG,REGEXP_INSTR(LOWER(NARR_AGG),''\d++.(|^%)'',5),2) 
+				END) AS TEST_VALUES 
+			      ,NARR_AGG 
+			  FROM (SELECT LVEF.PAT_ID 
+		      ,LVEF.ORDER_PROC_ID 
+		      ,LVEF.ACC_NUM 
+		      ,LVEF.ORDER_TIME 
+		      ,LVEF.ORD_VALUE 
+		      ,LISTAGG(NARR.NARR_LINE 
+		                  || ''|'' 
+		                  || NARR.NARR_NARRATIVE,'' || '') WITHIN  GROUP(			 ORDER BY NARR.NARR_LINE		) NARR_AGG 
+		  FROM (SELECT PAT_ID 
+		      ,ACC_NUM 
+		      ,ORDER_PROC_ID 
+		      ,NARR_LINE 
+		      ,ORDER_TIME 
+		      ,ORD_VALUE 
+		      ,NARR_NARRATIVE 
+		  FROM ' || p_narr_table || '
+		 WHERE (			LOWER(NARR_NARRATIVE) LIKE ''%ejection%'' 
+			    OR UPPER(NARR_NARRATIVE) LIKE ''%LVEF%'' 
+			    OR LOWER(NARR_NARRATIVE) LIKE ''%fraction%'')) LVEF 
+          JOIN ' || p_narr_table || ' NARR ON LVEF.ORDER_PROC_ID = NARR.ORDER_PROC_ID  
+		  							AND NARR.NARR_LINE  BETWEEN LVEF.NARR_LINE and LVEF.NARR_LINE  + 1 
+		 GROUP BY LVEF.PAT_ID 
+		      ,LVEF.ORDER_PROC_ID 
+		      ,LVEF.ACC_NUM 
+		      ,LVEF.ORDER_TIME 
+		      ,LVEF.ORD_VALUE) 
+		)) 
+            WHERE LVEF_FINAL_VALUE in (''1'',''2'',''3'',''4'',''5'',''6'',''7'',''8'',''9'',''10'',''11'',''12'',''13'',''14'',''15'',''16'',''17'',''18'',''19'',''20'',''21'',''22'',''23'',''24'',''25'',''26'',''27'',''28'',''29'',''30'',''31''))';  
+                            
+EXECUTE IMMEDIATE q1; 
+end;
 --------------------------------------
 -- Merge criterion
 --------------------------------------
