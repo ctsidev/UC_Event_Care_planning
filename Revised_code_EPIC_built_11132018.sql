@@ -840,37 +840,37 @@ exec P_ACP_CREATE_DENOMINATOR('XDR_ACP_COHORT','XDR_ACP_DEPT_DRV','XDR_ACP_APPT_
 --------------------------------------
 exec P_ACP_REMOVE_DECEASED('XDR_ACP_COHORT');
 exec P_ACP_REMOVE_RESTRICTED('XDR_ACP_COHORT','XDR_ACP_PAT_STATUS');
-
+138321
 --------------------------------------
 --apply problem list dx criterion
 --------------------------------------
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CANCER');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CHF');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ALS');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','COPD');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','COPD_SPO2');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CIRRHOSIS');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ESRD');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','PERITONITIS');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','HEPATORENAL');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','BLEEDING');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ASCITES');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ENCEPHALOPATHY');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CANCER');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CHF');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ALS');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','COPD');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','COPD_SPO2');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CIRRHOSIS');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ESRD');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','PERITONITIS');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','HEPATORENAL');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','BLEEDING');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ASCITES');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ENCEPHALOPATHY');
 exec P_ACP_PL_ESDL_DECOMPENSATION('XDR_ACP_COHORT');
 
 --------------------------------------
 --apply encounter dx criterion (3 years)
 --------------------------------------
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CANCER');
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CHF');
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ALS');
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','CIRRHOSIS');
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ESRD');
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','PERITONITIS');
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ASCITES');
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','BLEEDING');
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','ENCEPHALOPATHY');
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_TEMP','HEPATORENAL');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CANCER',3);
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CHF',3);
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ALS',3);
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CIRRHOSIS',3);
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ESRD',3);
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','PERITONITIS',3);
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ASCITES',3);
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','BLEEDING',3);
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ENCEPHALOPATHY',3);
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','HEPATORENAL',3);
 EXEC P_ACP_DX_ESDL_DECOMPENSATION('XDR_ACP_COHORT');
 
 --------------------------------------
@@ -1129,7 +1129,7 @@ end;
 --------------------------------------
 --apply encounter dx criterion (3 years)
 --------------------------------------
-create or replace procedure P_ACP_ENC_DX(p_cohort_table in varchar2, p_dx_flag in varchar2, p_timeframe in number) as
+create or replace procedure P_ACP_ENC_DX(p_cohort_table in varchar2, p_driver_table in varchar2, p_dx_flag in varchar2, p_timeframe in number) as
  q1 varchar2(4000);
 begin
 
@@ -1141,7 +1141,7 @@ begin
                 SELECT DISTINCT coh.pat_id 
                 FROM ' || p_cohort_table  || '          coh 
                 JOIN pat_enc_dx                     dx on coh.pat_id = dx.pat_id 
-                JOIN JSANZ.js_xdr_WALLING_DX_LOOKUP   drv   ON dx.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || ''' 
+                JOIN ' || p_driver_table ||'    drv   ON dx.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || ''' 
                 left join pat_enc                   enc on dx.pat_enc_csn_id = enc.pat_enc_csn_id 
                 WHERE 
                     dx.CONTACT_DATE between sysdate - (365.25 * ' || p_timeframe || ') and sysdate 
