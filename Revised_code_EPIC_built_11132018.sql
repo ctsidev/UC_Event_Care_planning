@@ -1,4 +1,12 @@
-
+--Notes:
+--------------------------------------------- 
+/*
+Wenger wanted to use current population --> load data from JSANZ schema into ctsi_research
+New patients are to be added at every run
+Existing patients are to stay and not be altered over time. Except update upcoming appointment
+Assignments to intervention arm are based on clinic. The clinic-intervention_arm relationship is done only once
+AD-POLST: does it need to be refreshed every time?
+*/
 /***********************************************************************************
     Create cohort table: only the first time, from then on, we just add new patients
 
@@ -15,6 +23,7 @@
 	"PL_ALS" NUMBER, 
 	"PL_CIRRHOSIS" NUMBER, 
 	"CREATION_DATE" TIMESTAMP (6), 
+    "UPDATE_DATE" TIMESTAMP (6), 
 	"PL_COPD_SP02" NUMBER, 
 	"PL_PERITONITIS" NUMBER, 
 	"PL_HEPATORENAL" NUMBER, 
@@ -66,7 +75,7 @@
     "AD_THREE" NUMBER,
     "POLST_ALL" NUMBER,
     "POLST_THREE" NUMBER
-   )
+   );
 
 
 /***********************************************************************************
@@ -84,7 +93,7 @@
 -------------------------------------------
 -- Primary Care Department driver
 -------------------------------------------
-CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DEPT_DRV(dep.DEPARTMENT_ID NUMBER), LOC_ID number)
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DEPT_DRV(DEPARTMENT_ID NUMBER, LOC_ID number)
 ON COMMIT PRESERVE ROWS;
 
 INSERT INTO XDR_ACP_DEPT_DRV
@@ -806,10 +815,8 @@ INSERT INTO XDR_ACP_ADPOLST VALUES('300058','POLST');COMMIT;	---POLST
 
 
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_RECORD_STATE("RECORD_STATE_C" NUMBER) ON COMMIT PRESERVE ROWS;
-INSERT INTO XDR_ACP_RECORD_STATE 
-SELECT RECORD_STATE_C
-FROM ZC_RECORD_STATE
-WHERE RECORD_STATE_C = 2;
+INSERT INTO XDR_ACP_RECORD_STATE(RECORD_STATE_C)
+VALUES(2);
 COMMIT;
 
 
@@ -826,7 +833,7 @@ COMMIT;
 --------------------------------------
 -- Create denominator
 --------------------------------------
-exec P_ACP_CREATE_DENOMINATOR('XDR_ACP_COHORT','XDR_ACP_APPT_STATUS');
+exec P_ACP_CREATE_DENOMINATOR('XDR_ACP_COHORT','XDR_ACP_DEPT_DRV','XDR_ACP_APPT_STATUS');
 
 --------------------------------------
 --remove excluded patients
@@ -982,6 +989,16 @@ exec p_acp_clean_up('XDR_ACP_CHEMO_CPT');
 exec p_acp_clean_up('XDR_ACP_LAB');
 exec p_acp_clean_up('XDR_ACP_MELD_TABLE');
 exec p_acp_clean_up('XDR_ACP_NARR');
+exec p_acp_clean_up('XDR_ACP_CLINICS');
+exec p_acp_clean_up('XDR_ACP_APPT_TYPE');
+exec p_acp_clean_up('XDR_ACP_APPT_STATUS');
+exec p_acp_clean_up('XDR_ACP_ADPOLST');
+exec p_acp_clean_up('XDR_ACP_RECORD_STATE');
+exec p_acp_clean_up('XDR_ACP_DOC_STATUS');
+
+
+
+
 
 
 
@@ -992,7 +1009,7 @@ exec p_acp_clean_up('XDR_ACP_NARR');
 --------------------------------------
 -- Create denominator
 --------------------------------------
-create or replace procedure p_acp_create_denominator(p_cohort_table in varchar2, p_driver_table in varchar2) as
+create or replace procedure p_acp_create_denominator(p_cohort_table in varchar2, p_dept_driver_table in varchar2, p_appt_driver_table in varchar2)  as
  q1 varchar2(4000);
 begin
 
@@ -1009,13 +1026,13 @@ begin
         LEFT JOIN ' || p_cohort_table || '  coh   ON pat.pat_id = coh.pat_id and coh.pat_id IS NULL
         JOIN clarity.clarity_ser                    prov2 ON pat.cur_pcp_prov_id = prov2.PROV_ID  
                                                     AND prov2.user_id IS NOT NULL
-        JOIN XDR_ACP_DEPT_DRV      dd on enc.department_id = dd.department_id
+        JOIN ' || p_dept_driver_table || '      dd on enc.department_id = dd.department_id
         WHERE 
                 enc.effective_date_dt between sysdate - 366 and sysdate 
                 and floor(months_between(TRUNC(sysdate), pat.birth_date)/12) >= 18
                 and enc.enc_type_c = 101
                 and (enc.appt_status_c is not null and enc.appt_status_c not in (SELECT APPT_STATUS_C
-                                                                                FROM ' || p_driver_table || '
+                                                                                FROM ' || p_appt_driver_table || '
                                                                                 WHERE appt_cat = ''exclude'')
                     ) 
                 GROUP BY enc.PAT_ID,
@@ -1076,7 +1093,8 @@ begin
  q1 := 'UPDATE ' || p_cohort_table  || 
   ' SET PL_' || p_dx_flag || ' = 1 
   WHERE 
-    PAT_ID IN ( 
+    SELECTED IS NULL 
+    AND PAT_ID IN ( 
                 SELECT DISTINCT coh.pat_id 
                 FROM ' || p_cohort_table  || '          coh  
                 JOIN problem_list                     pl    ON coh.pat_id = pl.pat_id AND pl.rec_archived_yn = ''N'' 
@@ -1098,33 +1116,35 @@ begin
   UPDATE ' || p_cohort_table  || 
   ' SET pl_ESDL_decompensation = 1 
   WHERE  
-        PL_PERITONITIS = 1 
+        SELECTED IS NULL
+        AND (PL_PERITONITIS = 1 
         OR PL_ASCITES = 1 
         OR PL_BLEEDING = 1 
         OR PL_ENCEPHALOPATHY = 1 
         OR PL_HEPATORENAL = 1 
-        OR PL_PERITONITIS = 1';
+        OR PL_PERITONITIS = 1)';
  EXECUTE IMMEDIATE q1;
 end;
 
 --------------------------------------
 --apply encounter dx criterion (3 years)
 --------------------------------------
-create or replace procedure P_ACP_ENC_DX(p_cohort_table in varchar2, p_driver_table in varchar2, p_dx_flag in varchar2) as
+create or replace procedure P_ACP_ENC_DX(p_cohort_table in varchar2, p_dx_flag in varchar2, p_timeframe in number) as
  q1 varchar2(4000);
 begin
 
  q1 := 'UPDATE ' || p_cohort_table  || ' 
   SET DX_' || p_dx_flag || ' = 1 
   WHERE 
-    PAT_ID IN ( 
+    SELECTED IS NULL 
+    AND PAT_ID IN ( 
                 SELECT DISTINCT coh.pat_id 
                 FROM ' || p_cohort_table  || '          coh 
                 JOIN pat_enc_dx                     dx on coh.pat_id = dx.pat_id 
-                JOIN ' || p_driver_table ||'   drv   ON dx.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || ''' 
+                JOIN JSANZ.js_xdr_WALLING_DX_LOOKUP   drv   ON dx.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || ''' 
                 left join pat_enc                   enc on dx.pat_enc_csn_id = enc.pat_enc_csn_id 
                 WHERE 
-                    dx.CONTACT_DATE between sysdate - (365.25 * 3) and sysdate 
+                    dx.CONTACT_DATE between sysdate - (365.25 * ' || p_timeframe || ') and sysdate 
                     AND enc.enc_type_c = 101)';
 EXECUTE IMMEDIATE q1;
 end;
@@ -1140,12 +1160,13 @@ begin
   UPDATE ' || p_cohort_table  || 
   ' SET DX_ESDL_decompensation = 1 
   WHERE  
-        DX_PERITONITIS = 1 
+        SELECTED IS NULL
+        AND (DX_PERITONITIS = 1 
         OR DX_ASCITES = 1 
         OR DX_BLEEDING = 1 
         OR DX_ENCEPHALOPATHY = 1 
         OR DX_HEPATORENAL = 1 
-        OR DX_PERITONITIS = 1';
+        OR DX_PERITONITIS = 1)';
  EXECUTE IMMEDIATE q1;
 end;
 
@@ -1159,7 +1180,8 @@ begin
  q1 := 'UPDATE ' || p_cohort_table  || ' 
   SET ' || p_dept || '_VISIT = 1  
   WHERE  
-    PAT_ID IN ( 
+    SELECTED IS NULL
+    AND PAT_ID IN ( 
                 SELECT DISTINCT  coh.PAT_ID 
 FROM ' || p_cohort_table  || '          coh 
 JOIN clarity.PAT_ENC                            enc on coh.pat_id = enc.pat_id 
@@ -1187,7 +1209,8 @@ begin
  q1 := 'UPDATE ' || p_cohort_table  || ' 
   SET ' || p_criteria || '_ADMIT = 1 
   WHERE 
-    PAT_ID IN ( 
+    SELECTED IS NULL
+    AND PAT_ID IN ( 
                 SELECT DISTINCT  coh.PAT_ID 
                 FROM ' || p_cohort_table  || '          coh 
                 JOIN pat_enc_hsp                     enc ON coh.pat_id = enc.pat_id 
@@ -1224,7 +1247,7 @@ begin
                   ELSE o.ord_num_value END as harm_num_val                       
       FROM order_results                o 
       JOIN order_proc                   p   ON p.order_proc_id = o.order_proc_id 
-      JOIN ' || p_cohort_table  || '    coh ON p.pat_id = coh.pat_id AND (coh.PL_CIRRHOSIS = 1 OR COH.DX_CIRRHOSIS = 1) 
+      JOIN ' || p_cohort_table  || '    coh ON p.pat_id = coh.pat_id AND (coh.PL_CIRRHOSIS = 1 OR COH.DX_CIRRHOSIS = 1) AND coh.SELECTED IS NULL
       JOIN ' || p_driver_table  || '    drv ON p.proc_id = drv.proc_id and o.component_id = drv.component_id 
       JOIN order_proc_2                 op2 ON p.ORDER_PROC_ID = op2.ORDER_PROC_ID  
       JOIN clarity_component            cc  ON o.component_id = cc.component_id 
@@ -1239,6 +1262,7 @@ q2 := 'CREATE INDEX ' || p_table_name || '_IX_RSLT_FLAG ON ' || p_table_name || 
 
 EXECUTE IMMEDIATE q1;
 EXECUTE IMMEDIATE q2;
+
 end;
 
 --------------------------------------
@@ -1360,7 +1384,8 @@ begin
  q1 := 'UPDATE ' || p_cohort_table  || 
   ' SET MELD = 1 
   WHERE  
-    PAT_ID IN ( 
+    SELECTED IS NULL
+    AND PAT_ID IN ( 
                     select DISTINCT pat_id 
                     from ( 
                             select pat_id 
@@ -1418,7 +1443,8 @@ begin
  q1 := 'UPDATE ' || p_cohort_table  || ' 
   SET CHEMO = 1  
   WHERE  
-    PAT_ID IN (      
+    SELECTED IS NULL
+    AND PAT_ID IN (      
         SELECT coh.pat_id 
           FROM ' || p_cohort_table  || '           coh 
           JOIN pat_enc                  enc on coh.pat_id = enc.pat_id 
@@ -1453,7 +1479,8 @@ begin
  q1 := 'UPDATE ' || p_cohort_table  || ' 
   SET CHEMO = 1  
   WHERE  
-    PAT_ID IN (      
+    SELECTED IS NULL
+    AND PAT_ID IN (      
         SELECT DISTINCT  med1.pat_id 
         FROM ( 
         SELECT  m.pat_id, 
@@ -1468,7 +1495,8 @@ begin
         left join zc_order_class zoc on m.order_class_C = zoc.order_class_c 
         left join zc_ordering_mode zom on m.ordering_mode_c = zom.ordering_mode_c 
         WHERE  
-            (coh.PL_CANCER = 1 OR COH.DX_CANCER = 1) 
+            coh.SELECTED IS NULL
+            AND (coh.PL_CANCER = 1 OR COH.DX_CANCER = 1) 
             AND TRUNC(m.ordering_date) BETWEEN sysdate - (365.25 * ' || p_timeframe ||') AND sysdate 
             and zoc.name <> ''Historical Med'' 
     ) med1 
@@ -1499,7 +1527,7 @@ end;
 --------------------------------------
 -- EJECTION FRACTION
 --------------------------------------
-   create or replace procedure P_ACP_EF_NARR(p_table_name in varchar2, p_cohort_table in varchar2, p_timeframe in number) as
+create or replace procedure P_ACP_EF_NARR(p_table_name in varchar2, p_cohort_table in varchar2, p_timeframe in number) as
  q1 varchar2(6000);
 begin
 
@@ -1523,6 +1551,7 @@ begin
   LEFT JOIN order_rad_acc_num   acc ON opr.order_proc_id = acc.order_proc_id 
   WHERE  
   		(coh.pl_chf = 1 or coh.dx_chf = 1) 
+        AND coh.SELECTED IS NULL 
         AND opr.order_status_c = 5                     				
         AND OPR.ORDER_TYPE_C = 29 
 		AND opr.result_time between SYSDATE - (365.25 * ' || p_timeframe || ') AND SYSDATE)                      opr 
@@ -1541,7 +1570,8 @@ begin
  q1 := 'UPDATE ' || p_cohort_table  || ' 
   SET EF = 1  
   WHERE  
-    PAT_ID IN ( 
+    SELECTED IS NULL
+    AND PAT_ID IN ( 
     SELECT distinct PAT_ID 
  from ( 
  SELECT PAT_ID 
@@ -1617,17 +1647,15 @@ begin
  q1 := 'UPDATE ' || p_cohort_table  || ' 
   SET ALS = 1  ,SELECTED = 1 
   WHERE  
-    (PL_ALS = 1 OR DX_ALS = 1)';
+    (PL_ALS = 1 AND DX_ALS = 1)';
 
  q2 := 'UPDATE ' || p_cohort_table  || ' 
   SET CANCER = 1  ,SELECTED = 1 
   WHERE  
     (PL_CANCER = 1 AND ONC_VISIT = 1)
     OR
-    (DX_CANCER = 1 AND CHEMO = 1)
-    '
+    (DX_CANCER = 1 AND CHEMO = 1)'
     ;
-
 
 q3 := 'UPDATE ' || p_cohort_table  || ' 
   SET CHF = 1 ,SELECTED = 1 
@@ -1675,12 +1703,13 @@ EXECUTE IMMEDIATE q5;
 EXECUTE IMMEDIATE 'COMMIT'; 
 EXECUTE IMMEDIATE q6; 
 EXECUTE IMMEDIATE 'COMMIT'; 
+
 end;
 
 --------------------------------------
 -- Age criteria
 --------------------------------------
-create or replace procedure P_ACP_AGE_CRTIERIA(p_table_name in varchar2, p_age_limit in varchar2) as
+create or replace procedure P_ACP_AGE_CRTIERIA(p_cohort_table in varchar2, p_age_limit in varchar2) as
  q1 varchar2(4000);
 begin
 
@@ -1794,7 +1823,8 @@ FROM (SELECT DISTINCT PAT_ID
             left join clarity_loc loc on dep2.rev_loc_id = loc.loc_id 
             join ' || p_driver_appt_type || '      apt on enc.APPT_PRC_ID = apt.prc_id 
             where  
-                    enc.effective_date_dt between sysdate - 366 and sysdate  
+                    coh.SELECTED IS NULL
+                    AND enc.effective_date_dt between sysdate - 366 and sysdate  
                     and enc.enc_type_c = 101 
                     and (enc.appt_status_c is not null and enc.appt_status_c not in (SELECT APPT_STATUS_C 
                                                                                             FROM ' || p_driver_appt_status || '
@@ -1899,11 +1929,11 @@ end;
 --------------------------------------
 ---- Clinic attribution: assing clinic
 --------------------------------------
-create or replace procedure P_ACP_CLINIC(p_table_name in varchar2) as
+create or replace procedure P_ACP_CLINIC(p_cohort_table in varchar2) as
  q1 varchar2(4000);
 begin
 
- q1 := 'update ' || p_table_name  || ' 
+ q1 := 'update ' || p_cohort_table  || ' 
     set clinic_id = COALESCE(CLINIC_LAST_PCP,CLINIC_MOST_VISITS)';
 EXECUTE IMMEDIATE q1;
 end; 
@@ -1916,18 +1946,19 @@ create or replace procedure P_ACP_COORDINATOR(p_cohort_table in varchar2, p_driv
  q1 varchar2(4000);
 begin
 
- q1 := '
-merge into ' || p_cohort_table  || '  coh
-USING
-(SELECT distinct coh.pat_id
-            ,gr.coordinator_id
-FROM ' || p_cohort_table  || '  coh
-join ' || p_driver_table || '  gr on clinic_id = gr.loc_id
-WHERE GR.LOC_ID NOT IN (
+ q1 := 'merge into ' || p_cohort_table  || '  coh 
+USING 
+(SELECT distinct coh.pat_id 
+            ,gr.coordinator_id 
+FROM ' || p_cohort_table  || '  coh 
+join ' || p_driver_table || '  gr on clinic_id = gr.loc_id 
+WHERE 
+SELECTED IS NULL AND  
+GR.LOC_ID NOT IN (
     -- clincis with +1 CCC
 6016
 ,7083
-,6017
+,6017 
 ,7000)
 ) r
 on
@@ -1935,7 +1966,7 @@ on
 when matched THEN
 update SET coh.coordinator_id = r.coordinator_id';
 EXECUTE IMMEDIATE q1;
-end; 
+end;
 
 --------------------------------------
 -- randomization
@@ -1947,41 +1978,41 @@ end;
 create or replace procedure P_ACP_APPOINTMENT(p_cohort_table in varchar2, p_driver_dept in varchar2, p_driver_appt_type in varchar2, p_driver_appt_status in varchar2) as
  q1 varchar2(4000);
 begin
- q1 := '
-MERGE INTO ' || p_cohort_table || ' coh
-USING (
-SELECT * FROM (
-SELECT DISTINCT coh.pat_id
-               ,vsa.pat_enc_csn_id
-               ,vsa.appt_dttm
-               ,vsa.department_id
-               ,vsa.department_name
-               ,vsa.dept_specialty_c   
-               ,vsa.dept_specialty_name AS department_specialty
+ q1 := 'MERGE INTO ' || p_cohort_table || ' coh 
+USING ( 
+SELECT * FROM ( 
+SELECT DISTINCT coh.pat_id 
+               ,vsa.pat_enc_csn_id 
+               ,vsa.appt_dttm 
+               ,vsa.department_id 
+               ,vsa.department_name 
+               ,vsa.dept_specialty_c    
+               ,vsa.dept_specialty_name AS department_specialty 
                ,vsa.loc_id            
-               ,vsa.loc_name
-               ,vsa.prov_id
-               ,vsa.prov_name_wid
-               ,COH.CUR_PCP_PROV_ID
-              ,case when COH.CUR_PCP_PROV_ID = vsa.prov_id then 1 else 0 end appt_pcp_yn
-              ,rank() over(
-                    partition by coh.pat_id 
-                    order by coh.pat_id, vsa.appt_dttm asc
-                    ) ranking
-  FROM ' || p_cohort_table || '                            coh
-  JOIN v_sched_appt           vsa   ON coh.pat_id = vsa.pat_id
-  JOIN ' || p_driver_dept || '       dep on vsa.DEPARTMENT_ID = dep.department_id
-  join ' || p_driver_appt_type || '      apt   ON vsa.prc_id = apt.prc_id
-  join ' || p_driver_appt_status || '    stt  ON vsa.appt_status_c = stt.APPT_STATUS_C AND stt.appt_cat = ''include''
-  WHERE vsa.appt_dttm > sysdate
-  )
-  where ranking = 1
-  ) r
-  ON 
-  (coh.pat_Id = r.pat_id)
-  WHEN MATCHED THEN
-  UPDATE SET coh.APPOINTMENT_DATE = r.appt_dttm
-  ,coh.APPOINTMENT_CSN = r.pat_enc_csn_id';
+               ,vsa.loc_name 
+               ,vsa.prov_id 
+               ,vsa.prov_name_wid 
+               ,COH.CUR_PCP_PROV_ID 
+              ,case when COH.CUR_PCP_PROV_ID = vsa.prov_id then 1 else 0 end appt_pcp_yn 
+              ,rank() over( 
+                    partition by coh.pat_id  
+                    order by coh.pat_id, vsa.appt_dttm asc 
+                    ) ranking 
+  FROM ' || p_cohort_table || '                            coh 
+  JOIN v_sched_appt           vsa   ON coh.pat_id = vsa.pat_id 
+  JOIN ' || p_driver_dept || '       dep on vsa.DEPARTMENT_ID = dep.department_id 
+  join ' || p_driver_appt_type || '      apt   ON vsa.prc_id = apt.prc_id 
+  join ' || p_driver_appt_status || '    stt  ON vsa.appt_status_c = stt.APPT_STATUS_C AND stt.appt_cat = ''include'' 
+  WHERE vsa.appt_dttm > sysdate 
+  ) 
+  where ranking = 1 
+  ) r 
+  ON  
+  (coh.pat_Id = r.pat_id) 
+  WHEN MATCHED THEN 
+  UPDATE SET coh.APPOINTMENT_DATE = r.appt_dttm 
+  ,coh.APPOINTMENT_CSN = r.pat_enc_csn_id  
+  ,coh.UPDATE_DATE = sysdate';
   EXECUTE IMMEDIATE q1;
 end; 
 
@@ -1996,4 +2027,5 @@ begin
         ' PURGE';
  EXECUTE IMMEDIATE q1;
 end;
+
 
