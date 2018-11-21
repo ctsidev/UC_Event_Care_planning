@@ -65,9 +65,9 @@ AD-POLST: does it need to be refreshed every time?
     "NEXT_APPT_LOC_ID" VARCHAR2(25),
     "CLINIC_LAST_PCP" NUMBER,
     "CLINIC_MOST_VISITS" NUMBER,
-    "CLINIC"  NUMBER,
+    "CLINIC_ID"  NUMBER,
     "CUR_PCP_PROV_ID" VARCHAR(50),
-    "RANDOMIZATION_ARM" VARCHAR(50),
+    "RANDOMIZATION_ARM" NUMBER,
     "COORDINATOR_ID" VARCHAR2(250 BYTE),
     "APPOINTMENT_DATE" DATE,
     "APPOINTMENT_CSN" VARCHAR(50),
@@ -626,6 +626,7 @@ COMMIT;
 -------------------------------------------
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DX_LOOKUP(DX_ID NUMBER, ICD_CODE VARCHAR2(10 BYTE), DX_FLAG VARCHAR2(25 BYTE))
 ON COMMIT PRESERVE ROWS;
+create index XDR_ACP_DX_LOOKUP_id_dx_id on XDR_ACP_DX_LOOKUP(dx_id);
 INSERT INTO XDR_ACP_DX_LOOKUP
 select edg.dx_id
 ,drv.*
@@ -819,6 +820,9 @@ INSERT INTO XDR_ACP_RECORD_STATE(RECORD_STATE_C)
 VALUES(2);
 COMMIT;
 
+--------------------------------------
+--create driver tackle for doc status
+--------------------------------------
 
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DOC_STATUS("DOC_STAT_C" NUMBER) ON COMMIT PRESERVE ROWS;
 INSERT INTO XDR_ACP_DOC_STATUS 
@@ -826,6 +830,49 @@ SELECT DOC_STAT_C
 FROM ZC_DOC_STAT
 WHERE DOC_STAT_C = 35;       --35 - Error
 COMMIT;
+
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_RANDOMIZATION("CLINIC_ID" VARCHAR2(10), "ARM" NUMBER) ON COMMIT PRESERVE ROWS;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8000",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8182",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("1891",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("1930",3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("1890",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("1892",3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("1887",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8002",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8006",3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8008",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("4545",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("4750",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8150",3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8010",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8022",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("1847",3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8085",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("1675",3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("7008",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("7023",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("7024",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("7011",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("7046",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("7000",3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("7059",3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("7025",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("7007",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("7021",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("7084",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8151",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8084",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8092",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("1846",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8184",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("8082",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("2455",2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("6017",3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("6016",1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("6004",3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("6000",3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(CLINIC_ID, ARM) VALUES("6002",3);COMMIT;
 
 /***********************************************************************************
     Script to run 
@@ -841,36 +888,49 @@ exec P_ACP_CREATE_DENOMINATOR('XDR_ACP_COHORT','XDR_ACP_DEPT_DRV','XDR_ACP_APPT_
 exec P_ACP_REMOVE_DECEASED('XDR_ACP_COHORT');
 exec P_ACP_REMOVE_RESTRICTED('XDR_ACP_COHORT','XDR_ACP_PAT_STATUS');
 138321
+
 --------------------------------------
 --apply problem list dx criterion
 --------------------------------------
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CANCER');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CHF');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ALS');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','COPD');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','COPD_SPO2');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CIRRHOSIS');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ESRD');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','PERITONITIS');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','HEPATORENAL');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','BLEEDING');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ASCITES');
-exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ENCEPHALOPATHY');
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_PL_DX("PAT_ID" VARCHAR2(18 BYTE),
+"DX_FLAG" VARCHAR2(25 BYTE)
+) ON COMMIT PRESERVE ROWS;
+create index XDR_ACP_PL_DX_id_patdx_flag on XDR_ACP_PL_DX(pat_id,DX_FLAG);
+
+exec P_ACP_PL_DX_TBL('XDR_ACP_PL_DX', 'XDR_ACP_COHORT', 'XDR_ACP_DX_LOOKUP');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','CANCER');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','CHF');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','ALS');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','COPD');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','COPD_SPO2');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','CIRRHOSIS');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','ESRD');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','PERITONITIS');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','HEPATORENAL');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','BLEEDING');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','ASCITES');
+exec P_ACP_PL_DX('XDR_ACP_COHORT','XDR_ACP_PL_DX','ENCEPHALOPATHY');
 exec P_ACP_PL_ESDL_DECOMPENSATION('XDR_ACP_COHORT');
 
 --------------------------------------
 --apply encounter dx criterion (3 years)
 --------------------------------------
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CANCER',3);
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CHF',3);
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ALS',3);
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','CIRRHOSIS',3);
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ESRD',3);
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','PERITONITIS',3);
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ASCITES',3);
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','BLEEDING',3);
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','ENCEPHALOPATHY',3);
-exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP','HEPATORENAL',3);
+CREATE GLOBAL TEMPORARY TABLE XDR_ACP_ENC_DX("PAT_ID" VARCHAR2(18 BYTE),
+"DX_FLAG" VARCHAR2(25 BYTE)
+) ON COMMIT PRESERVE ROWS;
+create index XDR_ACP_ENC_DX_id_patdx_flag on XDR_ACP_ENC_DX(pat_id,DX_FLAG);
+
+exec procedure P_ACP_ENC_DX_TBL('XDR_ACP_ENC_DX'  , 'XDR_ACP_COHORT', 'XDR_ACP_DX_LOOKUP', 3)
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','CANCER');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','CHF');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','ALS');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','CIRRHOSIS');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','ESRD');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','PERITONITIS');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','ASCITES');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','BLEEDING');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','ENCEPHALOPATHY');
+exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','HEPATORENAL');
 EXEC P_ACP_DX_ESDL_DECOMPENSATION('XDR_ACP_COHORT');
 
 --------------------------------------
@@ -882,8 +942,8 @@ exec P_ACP_DEPT_VISIT('XDR_ACP_COHORT','NEPH',1,'ESRD');
 --------------------------------------
 --apply admision for certain conditions (CHF AND COPD)
 --------------------------------------
-exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT','XDR_ACP_DX_TEMP',1,'CHF');
-exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT','XDR_ACP_DX_TEMP',1,'COPD');
+exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP',1,'CHF');
+exec P_ACP_DEPT_ADMIT('XDR_ACP_COHORT','XDR_ACP_DX_LOOKUP',1,'COPD');
 
 --------------------------------------
 --chemotherapy
@@ -972,6 +1032,7 @@ exec  P_ACP_COORDINATOR('XDR_ACP_COHORT','XDR_ACP_CLINICS');
 --------------------------------------
 -- randomization
 --------------------------------------
+exec P_ACP_RANDOMIZATION("XDR_ACP_COHORT", "XDR_ACP_RANDOMIZATION")
 
 --------------------------------------
 --upcoming PC appointment 
@@ -995,9 +1056,8 @@ exec p_acp_clean_up('XDR_ACP_APPT_STATUS');
 exec p_acp_clean_up('XDR_ACP_ADPOLST');
 exec p_acp_clean_up('XDR_ACP_RECORD_STATE');
 exec p_acp_clean_up('XDR_ACP_DOC_STATUS');
-
-
-
+exec p_acp_clean_up('XDR_ACP_PL_DX');
+exec p_acp_clean_up('XDR_ACP_ENC_DX');
 
 
 
@@ -1084,10 +1144,30 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
+
+--------------------------------------
+--populate table with PL matching DX driver
+--------------------------------------
+create or replace procedure P_ACP_PL_DX_TBL(p_table_name  in varchar2, p_cohort_table in varchar2, p_driver_table in varchar2) as
+ q1 varchar2(4000);
+begin
+ q1 := 'INSERT INTO ' || p_table_name || ' 
+                SELECT coh.pat_id, drv.dx_flag 
+                FROM ' || p_cohort_table  || '          coh  
+                JOIN problem_list                     pl    ON coh.pat_id = pl.pat_id AND pl.rec_archived_yn = ''N'' 
+                JOIN zc_problem_status                zps   ON pl.problem_status_c = zps.problem_status_c 
+                JOIN ' || p_driver_table ||'   drv   ON pl.dx_id = drv.dx_id
+  where  
+        zps.name = ''Active''';
+ EXECUTE IMMEDIATE q1;
+end;
+
+
+
 --------------------------------------
 --apply problem list dx criterion
 --------------------------------------
-create or replace procedure P_ACP_PL_DX(p_cohort_table in varchar2, p_driver_table in varchar2, p_dx_flag in varchar2) as
+create or replace procedure P_ACP_PL_DX(p_cohort_table in varchar2, p_table_name in varchar2, p_dx_flag in varchar2) as
  q1 varchar2(4000);
 begin
  q1 := 'UPDATE ' || p_cohort_table  || 
@@ -1095,13 +1175,10 @@ begin
   WHERE 
     SELECTED IS NULL 
     AND PAT_ID IN ( 
-                SELECT DISTINCT coh.pat_id 
-                FROM ' || p_cohort_table  || '          coh  
-                JOIN problem_list                     pl    ON coh.pat_id = pl.pat_id AND pl.rec_archived_yn = ''N'' 
-                JOIN zc_problem_status                zps   ON pl.problem_status_c = zps.problem_status_c 
-                JOIN ' || p_driver_table ||'   drv   ON pl.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || ''' 
-  where  
-        zps.name = ''Active'')';
+                SELECT DISTINCT pat_id 
+                FROM ' || p_table_name  || '          
+               WHERE dx_flag = ''' || p_dx_flag || ''' 
+               )';
  EXECUTE IMMEDIATE q1;
 end;
 
@@ -1127,9 +1204,29 @@ begin
 end;
 
 --------------------------------------
+--populate table with ENC matching DX driver
+--------------------------------------
+create or replace procedure P_ACP_ENC_DX_TBL(p_table_name  in varchar2, p_cohort_table in varchar2, p_driver_table in varchar2, p_timeframe in number) as
+ q1 varchar2(4000);
+begin
+ q1 := 'INSERT INTO ' || p_table_name || ' 
+                SELECT coh.pat_id, drv.dx_flag
+                FROM ' || p_cohort_table  || '          coh 
+                JOIN pat_enc_dx                     dx on coh.pat_id = dx.pat_id 
+                JOIN ' || p_driver_table ||'    drv   ON dx.dx_id = drv.dx_id 
+                left join pat_enc                   enc on dx.pat_enc_csn_id = enc.pat_enc_csn_id 
+                WHERE 
+                    dx.CONTACT_DATE between sysdate - (365.25 * ' || p_timeframe || ') and sysdate 
+                    AND enc.enc_type_c = 101';
+ EXECUTE IMMEDIATE q1;
+end;
+
+
+
+--------------------------------------
 --apply encounter dx criterion (3 years)
 --------------------------------------
-create or replace procedure P_ACP_ENC_DX(p_cohort_table in varchar2, p_driver_table in varchar2, p_dx_flag in varchar2, p_timeframe in number) as
+create or replace procedure P_ACP_ENC_DX(p_cohort_table in varchar2, p_dx_table in varchar2, p_dx_flag in varchar2) as
  q1 varchar2(4000);
 begin
 
@@ -1138,14 +1235,9 @@ begin
   WHERE 
     SELECTED IS NULL 
     AND PAT_ID IN ( 
-                SELECT DISTINCT coh.pat_id 
-                FROM ' || p_cohort_table  || '          coh 
-                JOIN pat_enc_dx                     dx on coh.pat_id = dx.pat_id 
-                JOIN ' || p_driver_table ||'    drv   ON dx.dx_id = drv.dx_id AND drv.dx_flag = ''' || p_dx_flag || ''' 
-                left join pat_enc                   enc on dx.pat_enc_csn_id = enc.pat_enc_csn_id 
-                WHERE 
-                    dx.CONTACT_DATE between sysdate - (365.25 * ' || p_timeframe || ') and sysdate 
-                    AND enc.enc_type_c = 101)';
+                SELECT DISTINCT dx.pat_id 
+                FROM ' || p_dx_table ||'    dx    
+                WHERE dx.dx_flag = ''' || p_dx_flag || ''' )';
 EXECUTE IMMEDIATE q1;
 end;
 
@@ -1971,7 +2063,22 @@ end;
 --------------------------------------
 -- randomization
 --------------------------------------
-
+create or replace procedure P_ACP_RANDOMIZATION(p_cohort_table in varchar2, p_driver_table in varchar2) as
+ q1 varchar2(4000);
+begin
+ q1 := 'MERGE INTO ' || p_cohort_table || ' coh 
+USING ( 
+SELECT DISTINCT coh.pat_id 
+               ,ran.arm
+  FROM ' || p_cohort_table || '       coh 
+  JOIN ' || p_driver_table || '       ran on coh.clinic_id = ran.clinic_id
+  ) r 
+  ON  
+  (coh.pat_Id = r.pat_id) 
+  WHEN MATCHED THEN 
+  UPDATE SET coh.arm = r.arm';
+ EXECUTE IMMEDIATE q1;
+end;
 --------------------------------------
 --upcoming PC appointment 
 --------------------------------------
