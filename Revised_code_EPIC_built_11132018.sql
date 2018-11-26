@@ -936,8 +936,8 @@ EXEC P_ACP_DX_ESDL_DECOMPENSATION('XDR_ACP_COHORT');
 --------------------------------------
 --apply visit to departments criterion (oncology and nephrology)
 --------------------------------------
-exec P_ACP_DEPT_VISIT('XDR_ACP_COHORT','ONC',1,'CANCER');
-exec P_ACP_DEPT_VISIT('XDR_ACP_COHORT','NEPH',1,'ESRD');
+exec P_ACP_DEPT_VISIT_ONC('XDR_ACP_COHORT','ONCOLOGY',1,'CANCER');
+exec P_ACP_DEPT_VISIT_NEPH('XDR_ACP_COHORT','NEPH',1,'ESRD');
 
 --------------------------------------
 --apply admision for certain conditions (CHF AND COPD)
@@ -1268,7 +1268,7 @@ end;
 --------------------------------------
 --apply visit to departments criterion (oncology and nephrology)
 --------------------------------------
-create or replace procedure P_ACP_DEPT_VISIT(p_cohort_table in varchar2, p_dept in varchar2, p_years in number, p_criteria in varchar2) as
+create or replace procedure P_ACP_DEPT_VISIT_ONC(p_cohort_table in varchar2, p_dept in varchar2, p_years in number, p_criteria in varchar2) as
  q1 varchar2(4000);
 begin
  q1 := 'UPDATE ' || p_cohort_table  || ' 
@@ -1289,6 +1289,35 @@ WHERE
             REGEXP_LIKE(prv.primary_specialty,''' || p_dept || ''',''i'') 
             ) 
     and enc.enc_type_c = 101 
+    AND enc.EFFECTIVE_DATE_DT between sysdate - (365.25 * '|| p_years ||' ) AND sysdate
+    )';
+ EXECUTE IMMEDIATE q1;
+end;
+
+
+--------------------------------------
+--apply visit to departments criterion (oncology and nephrology)
+--------------------------------------
+create or replace procedure P_ACP_DEPT_VISIT_NEPH(p_cohort_table in varchar2, p_dept in varchar2, p_years in number, p_criteria in varchar2) as
+ q1 varchar2(4000);
+begin
+ q1 := 'UPDATE ' || p_cohort_table  || ' 
+  SET ' || p_dept || '_VISIT = 1  
+  WHERE  
+    SELECTED IS NULL
+    AND PAT_ID IN ( 
+                SELECT DISTINCT  coh.PAT_ID 
+FROM ' || p_cohort_table  || '          coh 
+JOIN clarity.PAT_ENC                            enc on coh.pat_id = enc.pat_id 
+LEFT JOIN clarity.CLARITY_DEP                   dep ON enc.department_id = dep.department_id 
+LEFT JOIN clarity.v_cube_d_provider             prv ON enc.visit_prov_id = prv.provider_id 
+WHERE 
+    (coh.PL_' || p_criteria || ' = 1 OR coh.DX_' || p_criteria || ' = 1) 
+    AND 
+            (REGEXP_LIKE(dep.specialty,''' || p_dept || ''',''i'') 
+            OR 
+            REGEXP_LIKE(prv.primary_specialty,''' || p_dept || ''',''i'') 
+            ) 
     AND enc.EFFECTIVE_DATE_DT between sysdate - (365.25 * '|| p_years ||' ) AND sysdate
     )';
  EXECUTE IMMEDIATE q1;
