@@ -841,7 +841,7 @@ COMMIT;
 	"LAB_CATEGORY" VARCHAR2(25 BYTE),
     "LOINC_CODE" VARCHAR2(50 BYTE)
    ) ON COMMIT PRESERVE ROWS ;
-   
+
 INSERT INTO XDR_ACP_LAB_DRV(PROC_ID, COMPONENT_ID, LAB_CATEGORY, LOINC_CODE)VALUES(682, 10020051, 'BILIRUBIN', '');COMMIT;
 INSERT INTO XDR_ACP_LAB_DRV(PROC_ID, COMPONENT_ID, LAB_CATEGORY, LOINC_CODE)VALUES(327246, 12344, 'CREATININE', '2160-0');COMMIT;
 INSERT INTO XDR_ACP_LAB_DRV(PROC_ID, COMPONENT_ID, LAB_CATEGORY, LOINC_CODE)VALUES(64588, 3000546, 'ALBUMIN', '30000-4');COMMIT;
@@ -1460,6 +1460,7 @@ exec p_acp_clean_up('XDR_ACP_RECORD_STATE');
 exec p_acp_clean_up('XDR_ACP_DOC_STATUS');
 exec p_acp_clean_up('XDR_ACP_PL_DX');
 exec p_acp_clean_up('XDR_ACP_ENC_DX');
+exec p_acp_clean_up('XDR_ACP_LAB_DRV');
 
 
 
@@ -1952,7 +1953,7 @@ begin
                         where dialysis_count >= 2)        dia on labs.pat_id = dia.pat_id and labs.CREATININE_RESULT_TIME = dia.CREATININE_RESULT_TIME 
                         ) 
             ) 
-where meld + 1.32 * (137 - sodium) - (0.033 * meld * (137 - sodium)) > 18) ';
+where meld + 1.32 * (137 - sodium) - (0.033 * meld * (137 - sodium)) > 19) ';
  EXECUTE IMMEDIATE q1;
 end;
 
