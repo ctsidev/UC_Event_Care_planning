@@ -90,9 +90,15 @@ AD-POLST: does it need to be refreshed every time?
 -- Final diagnoses codes driver (dx_id)
 -- Patient vital status driver
 -- Encoutner/appoitnment status driver
--- Clinic-Coordinator driver
 -- Chemotherapy CPT driver
 -- Apporintment types driver
+-- Clinic-Coordinator driver
+-- AD/POLST docs driver
+-- doc status driver
+-- labs driver
+*************************************************************************************/
+/***********************************************************************************
+    Load driver tables
 *************************************************************************************/
 -------------------------------------------
 -- Primary Care Department driver
@@ -270,6 +276,12 @@ WHERE dep.DEPARTMENT_ID IN (
 80068
 );
 COMMIT;
+
+
+/***********************************************************************************
+    Script to run 
+*************************************************************************************/
+
 
 -------------------------------------------
 -- Diagnoses Codes driver
@@ -758,6 +770,7 @@ INSERT INTO XDR_ACP_APPT_TYPE(PRC_ID) VALUES('3476');COMMIT;
 -- Clinic-Coordinator driver
 -------------------------------------------
 -- DROP TABLE  XDR_ACP_CLINICS PURGE;
+-------------------------------------------
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_CLINICS(	"LOC_ID" NUMBER(18,0), 
 	"COORDINATOR_ID" VARCHAR2(128 BYTE)
    ) ON COMMIT PRESERVE ROWS;
@@ -1278,9 +1291,56 @@ INSERT INTO XDR_ACP_LAB_DRV(PROC_ID, COMPONENT_ID, LAB_CATEGORY, LOINC_CODE)VALU
 INSERT INTO XDR_ACP_LAB_DRV(PROC_ID, COMPONENT_ID, LAB_CATEGORY, LOINC_CODE)VALUES(327250, 12313, 'BILIRUBIN', '');COMMIT;
 INSERT INTO XDR_ACP_LAB_DRV(PROC_ID, COMPONENT_ID, LAB_CATEGORY, LOINC_CODE)VALUES(35249, 10010269, 'CREATININE', '');COMMIT;
 
-/***********************************************************************************
-    Script to run 
-*************************************************************************************/
+--------------------------------------
+--create driver for LABS
+--------------------------------------
+  CREATE GLOBAL TEMPORARY TABLE "CTSI_RESEARCH"."XDR_ACP_RANDOMIZATION" 
+   (	"LOC_ID" NUMBER, 
+	"ARM" NUMBER
+   ) ON COMMIT PRESERVE ROWS ;
+
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8000,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8182,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(1891,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(1930,3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(1890,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(1892,3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(1887,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8002,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8006,3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8008,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(4545,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(4750,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8150,3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8010,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8022,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(1847,3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8085,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(1675,3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(7008,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(7023,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(7024,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(7011,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(7046,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(7000,3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(7059,3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(7025,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(7007,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(7021,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(7084,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8151,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8084,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8092,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(1846,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8184,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(8082,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(2455,2);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(6017,3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(6016,1);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(6004,3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(6000,3);COMMIT;
+INSERT INTO XDR_ACP_RANDOMIZATION(LOC_ID,ARM) VALUES(6002,3);COMMIT;
+
 --------------------------------------
 -- Create denominator
 --------------------------------------
@@ -1328,6 +1388,7 @@ exec P_ACP_PL_ESDL_DECOMPENSATION('XDR_ACP_COHORT');
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_ENC_DX("PAT_ID" VARCHAR2(18 BYTE),
 "DX_FLAG" VARCHAR2(25 BYTE)
 ) ON COMMIT PRESERVE ROWS;
+
 create index XDR_ACP_ENC_DX_id_patdx_flag on XDR_ACP_ENC_DX(pat_id,DX_FLAG);
 
 exec procedure P_ACP_ENC_DX_TBL('XDR_ACP_ENC_DX'  , 'XDR_ACP_COHORT', 'XDR_ACP_DX_LOOKUP', 3)
@@ -1445,7 +1506,7 @@ exec P_ACP_COORDINATOR('XDR_ACP_COHORT','XDR_ACP_CLINICS');
 --------------------------------------
 -- randomization
 --------------------------------------
-exec P_ACP_RANDp_acp_intervention_assignmentOMIZATION('XDR_ACP_COHORT', 'XDR_ACP_RANDOMIZATION')
+exec P_ACP_INTERVENTION_ASSIGNMENT('XDR_ACP_COHORT', 'XDR_ACP_RANDOMIZATION')
 
 --------------------------------------
 --upcoming PC appointment 
@@ -1549,10 +1610,9 @@ SELECT DISTINCT coh.PAT_ID
             FROM ' || p_cohort_table  || '     coh 
             JOIN patient            pat on coh.pat_id = pat.pat_id 
             WHERE 
-                i2b2.f_death(pat.pat_id,2,1)  = ''Known Deceased''
-                and coh.SELECTED = 1
-                and coh.EXCLUDED IS NULL
-    ) 
+                i2b2.f_death(pat.pat_id,2,1)  = ''Known Deceased'' 
+                and coh.SELECTED = 1 
+                and coh.EXCLUDED IS NULL 
  ) R
  ON(COH.PAT_ID = R.PAT_ID) 
  WHEN MATCHED THEN 
@@ -1592,7 +1652,7 @@ end;
 --------------------------------------
 --Exclude RESTRICTED patients already in the cohort
 --------------------------------------
-create or replace procedure p_acp_exclude_restricted(p_cohort_table in varchar2) as
+create or replace procedure p_acp_exclude_restricted(p_cohort_table in varchar2, p_driver_table in varchar2) as
  q1 varchar2(4000);
 begin
 q1 :=  'MERGE INTO ' || p_cohort_table ||' coh 
@@ -1609,7 +1669,6 @@ SELECT coh.pat_id
                     patient_3.is_test_pat_yn = ''Y''
                 and coh.SELECTED = 1
                 and coh.EXCLUDED IS NULL
-    ) 
  ) R
  ON(COH.PAT_ID = R.PAT_ID) 
  WHEN MATCHED THEN 
