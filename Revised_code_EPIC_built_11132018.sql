@@ -65,16 +65,20 @@ AD-POLST: does it need to be refreshed every time?
     "NEXT_APPT_LOC_ID" VARCHAR2(25),
     "CLINIC_LAST_PCP" NUMBER,
     "CLINIC_MOST_VISITS" NUMBER,
+    "CLINIC_LAST_VISIT" NUMBER,
     "CLINIC_ID"  NUMBER,
     "CUR_PCP_PROV_ID" VARCHAR(50),
     "RANDOMIZATION_ARM" NUMBER,
     "COORDINATOR_ID" VARCHAR2(250 BYTE),
-    "APPOINTMENT_DATE" DATE,
-    "APPOINTMENT_CSN" VARCHAR(50),
+    -- "APPOINTMENT_DATE" DATE,
+    -- "APPOINTMENT_CSN" VARCHAR(50),
     "AD_ALL" NUMBER,
     "AD_THREE" NUMBER,
     "POLST_ALL" NUMBER,
-    "POLST_THREE" NUMBER
+    "POLST_THREE" NUMBER,
+    "EXCLUDED" NUMBER,
+    "EXCLUSION_DATE" TIMESTAMP (6), 
+    "EXCLUSION_REASON" VARCHAR2(250 BYTE)
    );
 
 
@@ -821,7 +825,7 @@ VALUES(2);
 COMMIT;
 
 --------------------------------------
---create driver tackle for doc status
+--create driver for doc status
 --------------------------------------
 
 CREATE GLOBAL TEMPORARY TABLE XDR_ACP_DOC_STATUS("DOC_STAT_C" NUMBER) ON COMMIT PRESERVE ROWS;
@@ -833,7 +837,7 @@ COMMIT;
 
 
 --------------------------------------
---create driver tackle for LABS
+--create driver for LABS
 --------------------------------------
   CREATE GLOBAL TEMPORARY TABLE "CTSI_RESEARCH"."XDR_ACP_LAB_DRV" 
    (	"PROC_ID" NUMBER, 
@@ -1287,7 +1291,13 @@ exec P_ACP_CREATE_DENOMINATOR('XDR_ACP_COHORT','XDR_ACP_DEPT_DRV','XDR_ACP_APPT_
 --------------------------------------
 exec P_ACP_REMOVE_DECEASED('XDR_ACP_COHORT');
 exec P_ACP_REMOVE_RESTRICTED('XDR_ACP_COHORT','XDR_ACP_PAT_STATUS');
-138321
+
+--------------------------------------
+--flag excluded patients
+--------------------------------------
+exec P_ACP_EXCLUDE_DECEASED('XDR_ACP_COHORT');
+exec P_ACP_EXCLUDE_RESTRICTED('XDR_ACP_COHORT','XDR_ACP_PAT_STATUS');
+
 
 --------------------------------------
 --apply problem list dx criterion
@@ -1333,6 +1343,11 @@ exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','ENCEPHALOPATHY');
 exec P_ACP_ENC_DX('XDR_ACP_COHORT','XDR_ACP_ENC_DX','HEPATORENAL');
 EXEC P_ACP_DX_ESDL_DECOMPENSATION('XDR_ACP_COHORT');
 
+
+--------------------------------------
+--Remove patients without PL for DX
+--------------------------------------
+EXEC P_ACP_REMOVE_NON_DX('XDR_ACP_COHORT');
 --------------------------------------
 --apply visit to departments criterion (oncology and nephrology)
 --------------------------------------
@@ -1513,7 +1528,9 @@ create or replace procedure p_acp_remove_deceased(p_cohort_table in varchar2) as
 begin
 
  q1 := 'DELETE FROM ' || p_cohort_table  ||
-        ' WHERE pat_id IN 
+        ' WHERE 
+            SELECTED IS NULL
+            AND pat_id IN 
             (SELECT DISTINCT coh.PAT_ID 
             FROM ' || p_cohort_table  || '     coh 
             JOIN patient            pat on coh.pat_id = pat.pat_id 
@@ -1524,14 +1541,42 @@ begin
 end;
 
 --------------------------------------
---remove excluded patients (RESTRICTED)
+--Exclude deceased patients already in the cohort
+--------------------------------------
+create or replace procedure p_acp_exclude_deceased(p_cohort_table in varchar2) as
+ q1 varchar2(4000);
+begin
+q1 :=  'MERGE INTO ' || p_cohort_table ||' coh 
+ USING ( 
+SELECT DISTINCT coh.PAT_ID 
+            FROM ' || p_cohort_table  || '     coh 
+            JOIN patient            pat on coh.pat_id = pat.pat_id 
+            WHERE 
+                i2b2.f_death(pat.pat_id,2,1)  = ''Known Deceased''
+                and coh.SELECTED = 1
+                and coh.EXCLUDED IS NULL
+    ) 
+ ) R
+ ON(COH.PAT_ID = R.PAT_ID) 
+ WHEN MATCHED THEN 
+ UPDATE SET  
+ coh.EXCLUDED = 1
+ ,coh.EXCLUSION_DATE = SYSDATE
+ ,coh.UPDATE_DATE = SYSDATE
+ ,coh.EXCLUSION_REASON = ''patient deceased''
+' ;
+
+ EXECUTE IMMEDIATE q1;
+end;
+--------------------------------------
+--remove RESTRICTED patients 
 --------------------------------------
 create or replace procedure p_acp_remove_restricted(p_cohort_table in varchar2, p_driver_table in varchar2) as
  q1 varchar2(4000);
 begin
-
- q1 := 'DELETE FROM ' || p_cohort_table  ||
-        ' WHERE pat_id IN 
+ q1 := 'UPDATE ' || p_cohort_table  ||
+        ' WHERE 
+            SELECT pat_id IN 
             (
                 SELECT coh.pat_id  
                 FROM ' || p_cohort_table ||'                   coh 
@@ -1547,6 +1592,39 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
+--------------------------------------
+--Exclude RESTRICTED patients already in the cohort
+--------------------------------------
+create or replace procedure p_acp_exclude_restricted(p_cohort_table in varchar2) as
+ q1 varchar2(4000);
+begin
+q1 :=  'MERGE INTO ' || p_cohort_table ||' coh 
+ USING ( 
+SELECT coh.pat_id  
+                FROM ' || p_cohort_table ||'                   coh 
+                JOIN patient_fyi_flags           flags ON coh.pat_id = flags.patient_id 
+                JOIN ' || p_driver_table || '     st   on flags.PAT_FLAG_TYPE_C = st.PAT_FLAG_TYPE_C 
+                UNION 
+                SELECT coh.pat_id  
+                FROM ' || p_cohort_table ||'                   coh 
+                LEFT JOIN patient_3                         ON coh.pat_id = patient_3.pat_id 
+                WHERE 
+                    patient_3.is_test_pat_yn = ''Y''
+                and coh.SELECTED = 1
+                and coh.EXCLUDED IS NULL
+    ) 
+ ) R
+ ON(COH.PAT_ID = R.PAT_ID) 
+ WHEN MATCHED THEN 
+ UPDATE SET  
+ coh.EXCLUDED = 1
+ ,coh.EXCLUSION_DATE = SYSDATE
+ ,coh.UPDATE_DATE = SYSDATE
+ ,coh.EXCLUSION_REASON = ''patient restricted''
+' ;
+
+ EXECUTE IMMEDIATE q1;
+end;
 
 --------------------------------------
 --populate table with PL matching DX driver
@@ -1606,6 +1684,47 @@ begin
  EXECUTE IMMEDIATE q1;
 end;
 
+
+
+--------------------------------------
+--remove patients without any diagnosis related to the criteria
+--------------------------------------
+create or replace procedure p_acp_remove_non_dx(p_cohort_table in varchar2) as
+ q1 varchar2(4000);
+begin
+
+ q1 := 'DELETE FROM ' || p_cohort_table  ||
+        ' WHERE 
+            SELECTED IS NULL
+            AND pat_id IN 
+            (SELECT DISTINCT coh.PAT_ID 
+            FROM ' || p_cohort_table  || '     coh 
+            WHERE 
+                PL_ALS IS NULL
+                AND PL_CANCER IS NULL
+                AND PL_CHF IS NULL
+                AND PL_CIRRHOSIS IS NULL
+                AND PL_COPD IS NULL
+                AND PL_COPD_SPO2 IS NULL
+                AMD PL_ESLD IS NULL
+                AND PL_ESDL_decompensation IS NULL               
+                AND PL_ESRD IS NULL
+                AND DX_ALS IS NULL               
+                AND DX_CANCER IS NULL
+                AND DX_CHF IS NULL
+                AND DX_CIRRHOSIS IS NULL
+                AND DX_COPD IS NULL
+                AND DX_COPD_SPO2 IS NULL
+                AND DX_ESLD IS NULL
+                AND DX_ESDL_DECOMPENSATION IS NULL
+                AND DX_ESRD IS NULL
+                AND DX_ESRD IS NULL
+            )';
+ EXECUTE IMMEDIATE q1;
+end;
+
+
+
 --------------------------------------
 --populate table with ENC matching DX driver
 --------------------------------------
@@ -1619,7 +1738,8 @@ begin
                 JOIN ' || p_driver_table ||'    drv   ON dx.dx_id = drv.dx_id 
                 left join pat_enc                   enc on dx.pat_enc_csn_id = enc.pat_enc_csn_id 
                 WHERE 
-                    dx.CONTACT_DATE between sysdate - (365.25 * ' || p_timeframe || ') and sysdate 
+                    coh.SELECTED IS NULL
+                    AND dx.CONTACT_DATE between sysdate - (365.25 * ' || p_timeframe || ') and sysdate 
                     AND enc.enc_type_c = 101';
  EXECUTE IMMEDIATE q1;
 end;
