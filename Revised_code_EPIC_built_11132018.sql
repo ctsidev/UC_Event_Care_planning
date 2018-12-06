@@ -1565,7 +1565,7 @@ begin
         JOIN ' || p_dept_driver_table || '      dd on enc.department_id = dd.department_id
         WHERE 
                 enc.effective_date_dt between sysdate - 366 and sysdate 
-                and floor(months_between(TRUNC(sysdate), pat.birth_date)/12) >= 18
+                and TRUNC(months_between(TRUNC(sysdate), pat.birth_date)/12) >= 18
                 and enc.enc_type_c = 101
                 and (enc.appt_status_c is not null and enc.appt_status_c not in (SELECT APPT_STATUS_C
                                                                                 FROM ' || p_appt_driver_table || '
