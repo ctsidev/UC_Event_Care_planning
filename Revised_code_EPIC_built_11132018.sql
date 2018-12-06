@@ -1427,15 +1427,12 @@ exec P_ACP_AGE_CRTIERIA('XDR_ACP_COHORT','75');
 --------------------------------------
 --remove not selected patients
 --------------------------------------
-delete from XDR_ACP_COHORT where selected is null;
-
-
+exec P_ACP_REMOVE_NOT_SELECTED('XDR_ACP_COHORT');
 
 --------------------------------------
 --AD-POLST
 --------------------------------------
 exec P_ACP_ADPOLST('XDR_ACP_COHORT', 'XDR_ACP_ADPOLST', 'XDR_ACP_RECORD_STATE', 'XDR_ACP_DOC_STATUS');
-
 
 --------------------------------------
 --CCC and clinic assignment
@@ -1443,17 +1440,17 @@ exec P_ACP_ADPOLST('XDR_ACP_COHORT', 'XDR_ACP_ADPOLST', 'XDR_ACP_RECORD_STATE', 
 exec P_ACP_LOC_LAST_PCP('XDR_ACP_COHORT', 'XDR_ACP_DEPT_DRV', 'XDR_ACP_APPT_TYPE', 'XDR_ACP_APPT_STATUS');
 exec P_ACP_loc_most_visits('XDR_ACP_COHORT', 'XDR_ACP_DEPT_DRV', 'XDR_ACP_APPT_TYPE', 'XDR_ACP_APPT_STATUS');
 exec P_ACP_CLINIC('XDR_ACP_COHORT');
-exec  P_ACP_COORDINATOR('XDR_ACP_COHORT','XDR_ACP_CLINICS');
+exec P_ACP_COORDINATOR('XDR_ACP_COHORT','XDR_ACP_CLINICS');
 
 --------------------------------------
 -- randomization
 --------------------------------------
-exec P_ACP_RANDOMIZATION('XDR_ACP_COHORT', 'XDR_ACP_RANDOMIZATION')
+exec P_ACP_RANDp_acp_intervention_assignmentOMIZATION('XDR_ACP_COHORT', 'XDR_ACP_RANDOMIZATION')
 
 --------------------------------------
 --upcoming PC appointment 
 --------------------------------------
-exec P_ACP_APPOINTMENT('XDR_ACP_COHORT', 'XDR_ACP_DEPT_DRV', 'XDR_ACP_APPT_TYPE', 'XDR_ACP_APPT_STATUS');
+-- exec P_ACP_APPOINTMENT('XDR_ACP_COHORT', 'XDR_ACP_DEPT_DRV', 'XDR_ACP_APPT_TYPE', 'XDR_ACP_APPT_STATUS');
 
 --------------------------------------
 --drop temp tables
@@ -2373,8 +2370,16 @@ end;
 --------------------------------------
 --remove patient not selected
 --------------------------------------
+create or replace procedure p_acp_remove_not_selected(p_cohort_table in varchar2) as
+ q1 varchar2(4000);
+begin
 
-
+ q1 := 'DELETE FROM ' || p_cohort_table  ||
+        ' WHERE 
+            SELECTED IS NULL
+';
+ EXECUTE IMMEDIATE q1;
+end;
 
 --------------------------------------
 --AD-POLST
@@ -2410,7 +2415,8 @@ FROM (
                         join DOC_INFORMATION                    BB on coh.PAT_ID = BB.DOC_PT_ID 
                         join ' || p_driver_adpolst || '        BT on BB.DOC_INFO_TYPE_C = BT.DOC_INFO_TYPE_C 
                         WHERE  
-                            BB.IS_SCANNED_YN = ''Y''  
+                            coh.SELECTED IS NULL
+                            AND BB.IS_SCANNED_YN = ''Y''  
                             -- We noticed that in the case of AD-POLST documents, there were instances where the docs had been deleted 
                             and ( 
                                 bb.RECORD_STATE_C IS NULL 
@@ -2612,9 +2618,9 @@ update SET coh.coordinator_id = r.coordinator_id';
 EXECUTE IMMEDIATE q1;
 end;
 --------------------------------------
--- randomization
+-- Intervention assignment
 --------------------------------------
-create or replace procedure P_ACP_RANDOMIZATION(p_cohort_table in varchar2, p_driver_table in varchar2) as
+create or replace procedure p_acp_intervention_assignment(p_cohort_table in varchar2, p_driver_table in varchar2) as
  q1 varchar2(4000);
 begin
  q1 := 'MERGE INTO ' || p_cohort_table || ' coh 
@@ -2633,46 +2639,46 @@ end;
 --------------------------------------
 --upcoming PC appointment 
 --------------------------------------
-create or replace procedure P_ACP_APPOINTMENT(p_cohort_table in varchar2, p_driver_dept in varchar2, p_driver_appt_type in varchar2, p_driver_appt_status in varchar2) as
- q1 varchar2(4000);
-begin
- q1 := 'MERGE INTO ' || p_cohort_table || ' coh 
-USING ( 
-SELECT * FROM ( 
-SELECT DISTINCT coh.pat_id 
-               ,vsa.pat_enc_csn_id 
-               ,vsa.appt_dttm 
-               ,vsa.department_id 
-               ,vsa.department_name 
-               ,vsa.dept_specialty_c    
-               ,vsa.dept_specialty_name AS department_specialty 
-               ,vsa.loc_id            
-               ,vsa.loc_name 
-               ,vsa.prov_id 
-               ,vsa.prov_name_wid 
-               ,COH.CUR_PCP_PROV_ID 
-              ,case when COH.CUR_PCP_PROV_ID = vsa.prov_id then 1 else 0 end appt_pcp_yn 
-              ,rank() over( 
-                    partition by coh.pat_id  
-                    order by coh.pat_id, vsa.appt_dttm asc 
-                    ) ranking 
-  FROM ' || p_cohort_table || '                            coh 
-  JOIN v_sched_appt           vsa   ON coh.pat_id = vsa.pat_id 
-  JOIN ' || p_driver_dept || '       dep on vsa.DEPARTMENT_ID = dep.department_id 
-  join ' || p_driver_appt_type || '      apt   ON vsa.prc_id = apt.prc_id 
-  join ' || p_driver_appt_status || '    stt  ON vsa.appt_status_c = stt.APPT_STATUS_C AND stt.appt_cat = ''include'' 
-  WHERE vsa.appt_dttm > sysdate 
-  ) 
-  where ranking = 1 
-  ) r 
-  ON  
-  (coh.pat_Id = r.pat_id) 
-  WHEN MATCHED THEN 
-  UPDATE SET coh.APPOINTMENT_DATE = r.appt_dttm 
-  ,coh.APPOINTMENT_CSN = r.pat_enc_csn_id  
-  ,coh.UPDATE_DATE = sysdate';
-  EXECUTE IMMEDIATE q1;
-end; 
+-- create or replace procedure P_ACP_APPOINTMENT(p_cohort_table in varchar2, p_driver_dept in varchar2, p_driver_appt_type in varchar2, p_driver_appt_status in varchar2) as
+--  q1 varchar2(4000);
+-- begin
+--  q1 := 'MERGE INTO ' || p_cohort_table || ' coh 
+-- USING ( 
+-- SELECT * FROM ( 
+-- SELECT DISTINCT coh.pat_id 
+--                ,vsa.pat_enc_csn_id 
+--                ,vsa.appt_dttm 
+--                ,vsa.department_id 
+--                ,vsa.department_name 
+--                ,vsa.dept_specialty_c    
+--                ,vsa.dept_specialty_name AS department_specialty 
+--                ,vsa.loc_id            
+--                ,vsa.loc_name 
+--                ,vsa.prov_id 
+--                ,vsa.prov_name_wid 
+--                ,COH.CUR_PCP_PROV_ID 
+--               ,case when COH.CUR_PCP_PROV_ID = vsa.prov_id then 1 else 0 end appt_pcp_yn 
+--               ,rank() over( 
+--                     partition by coh.pat_id  
+--                     order by coh.pat_id, vsa.appt_dttm asc 
+--                     ) ranking 
+--   FROM ' || p_cohort_table || '                            coh 
+--   JOIN v_sched_appt           vsa   ON coh.pat_id = vsa.pat_id 
+--   JOIN ' || p_driver_dept || '       dep on vsa.DEPARTMENT_ID = dep.department_id 
+--   join ' || p_driver_appt_type || '      apt   ON vsa.prc_id = apt.prc_id 
+--   join ' || p_driver_appt_status || '    stt  ON vsa.appt_status_c = stt.APPT_STATUS_C AND stt.appt_cat = ''include'' 
+--   WHERE vsa.appt_dttm > sysdate 
+--   ) 
+--   where ranking = 1 
+--   ) r 
+--   ON  
+--   (coh.pat_Id = r.pat_id) 
+--   WHEN MATCHED THEN 
+--   UPDATE SET coh.APPOINTMENT_DATE = r.appt_dttm 
+--   ,coh.APPOINTMENT_CSN = r.pat_enc_csn_id  
+--   ,coh.UPDATE_DATE = sysdate';
+--   EXECUTE IMMEDIATE q1;
+-- end; 
 
 --------------------------------------
 -- Drop temp tables
