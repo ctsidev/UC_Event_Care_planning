@@ -2335,7 +2335,7 @@ MERGE INTO js_xdr_walling_final_pat_coh coh
 USING 
 (select pat_id
                 --aggregate all the PL diagnosis across conditions.
-                ,pl_copd + pl_chf + PL_ESRD + PL_ALS + PL_ADVANCED_CANCER AS PL_AGG
+                ,pl_copd + pl_chf + PL_ESRD + PL_ALS + PL_ADVANCED_CANCER + PL_CIRRHOSIS AS PL_AGG
                 --identify which patients have both type of dx for each condition (PL and encounter)
                 ,case when pl_copd = 1 and dx_copd = 1 then 1 else 0 end copd_alt
                 ,case when pl_chf = 1 and dx_chf = 1 then 1 else 0 end chf_alt
