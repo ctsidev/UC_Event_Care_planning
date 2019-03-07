@@ -2425,7 +2425,8 @@ begin
             OR pl_chf IS NOT NULL 
             OR PL_ESRD IS NOT NULL
             OR PL_ALS IS NOT NULL 
-            OR PL_CANCER IS NOT NULL)
+            OR PL_CANCER IS NOT NULL
+            OR PL_CIRRHOSIS IS NOT NULL)
             and CURRENT_AGE >= ' || p_age_limit || '';
 EXECUTE IMMEDIATE q1;
 end; 
