@@ -428,7 +428,7 @@ select distinct coh.pat_id
       ,0 AS DX_CIRRHOSIS
       ,0 AS ANY_PL_DX
       ,case when mp.pat_id is not null then 1 else 0 end as ACTIVE_MYCHART
-      ,ROUND(MONTHS_BETWEEN(CURRENT_DATE,pat.birth_date)/12) as CURRENT_AGE
+      ,TRUNC(MONTHS_BETWEEN(CURRENT_DATE,pat.birth_date)/12) as CURRENT_AGE
 from (
         select pat_id
             ,pat_enc_csn_id
@@ -860,8 +860,6 @@ FROM (
         GROUP BY PAT_ID
     )
 ;
-    
-
 
 
 -------------------------------------------
