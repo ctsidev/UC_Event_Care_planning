@@ -991,9 +991,9 @@ select DISTINCT x.PAT_ID
                     ,x.INR
                     ,x.INR_result_time
                     ,x.diff_INR
-                    ,x.ALBUMIN
-                    ,x.ALBUMIN_result_time
-                    ,x.diff_ALBUMIN
+                --     ,x.ALBUMIN
+                --     ,x.ALBUMIN_result_time
+                --     ,x.diff_ALBUMIN
                     ,x.CREATININE
                     ,x.CREATININE_result_time
                     ,x.diff_creatinine
@@ -1008,9 +1008,9 @@ select DISTINCT x.PAT_ID
                             ,inr.INR
                             ,inr.INR_result_time
                             ,ABS(bili.result_time - inr.INR_result_time) as diff_INR
-                            ,alb.ALBUMIN
-                            ,alb.ALBUMIN_result_time
-                            ,ABS(bili.result_time - alb.ALBUMIN_result_time) as diff_ALBUMIN
+                        --     ,alb.ALBUMIN
+                        --     ,alb.ALBUMIN_result_time
+                        --     ,ABS(bili.result_time - alb.ALBUMIN_result_time) as diff_ALBUMIN
                             ,cr.CREATININE
                             ,cr.CREATININE_result_time
                             ,ABS(bili.result_time - cr.CREATININE_result_time) as diff_creatinine
@@ -1025,13 +1025,13 @@ select DISTINCT x.PAT_ID
                                     --,MAX(lab.result_time) OVER (PARTITION BY PAT_ID) AS LATEST_LAB
                                 FROM js_xdr_walling_lab lab
                                 WHERE LAB.LAB_FLAG = 'INR' AND lab.harm_num_val <> 9999999) inr on bili.pat_id = inr.pat_id and (bili.result_time - inr.INR_result_time) between -1 and 1
-                        JOIN (SELECT DISTINCT lab.PAT_ID
-                                    ,lab.result_time as ALBUMIN_result_time
-                                    ,lab.harm_num_val as ALBUMIN
+                        -- JOIN (SELECT DISTINCT lab.PAT_ID
+                        --             ,lab.result_time as ALBUMIN_result_time
+                        --             ,lab.harm_num_val as ALBUMIN
                                     
-                                    --,MAX(lab.result_time) OVER (PARTITION BY PAT_ID) AS LATEST_LAB
-                                FROM js_xdr_walling_lab lab
-                                WHERE LAB.LAB_FLAG = 'ALBUMIN' AND lab.harm_num_val <> 9999999) alb on bili.pat_id = alb.pat_id and (bili.result_time - alb.ALBUMIN_result_time) between -1 and 1
+                        --             --,MAX(lab.result_time) OVER (PARTITION BY PAT_ID) AS LATEST_LAB
+                        --         FROM js_xdr_walling_lab lab
+                        --         WHERE LAB.LAB_FLAG = 'ALBUMIN' AND lab.harm_num_val <> 9999999) alb on bili.pat_id = alb.pat_id and (bili.result_time - alb.ALBUMIN_result_time) between -1 and 1
                         JOIN (SELECT DISTINCT lab.PAT_ID
                                     ,lab.result_time as CREATININE_result_time
                                     ,lab.harm_num_val as CREATININE
@@ -1062,8 +1062,8 @@ SELECT * FROM js_xdr_walling_MELD_LABS;
 DROP TABLE js_xdr_walling_MELD_LABS_FINAL PURGE;
 CREATE table js_xdr_walling_MELD_LABS_FINAL as
 select pat_id
-        ,ALBUMIN
-        ,ALBUMIN_RESULT_TIME
+        -- ,ALBUMIN
+        -- ,ALBUMIN_RESULT_TIME
         ,BILIRUBIN
         ,BILIRUBIN_RESULT_TIME
         ,CREATININE
@@ -1075,10 +1075,10 @@ select pat_id
         ,SODIUM_RESULT_TIME
 from (
         select pat_id
-                ,ALBUMIN
-                ,ALBUMIN_RESULT_TIME
-                ,MIN(ABS(LATEST_LAB - ALBUMIN_RESULT_TIME)) OVER (partition by pat_id) as last_albumin
-                ,ABS(LATEST_LAB - ALBUMIN_RESULT_TIME) as DIFF_ALBUMIN
+                -- ,ALBUMIN
+                -- ,ALBUMIN_RESULT_TIME
+                -- ,MIN(ABS(LATEST_LAB - ALBUMIN_RESULT_TIME)) OVER (partition by pat_id) as last_albumin
+                -- ,ABS(LATEST_LAB - ALBUMIN_RESULT_TIME) as DIFF_ALBUMIN
                 ,BILIRUBIN
                 ,BILIRUBIN_RESULT_TIME
                 ,CREATININE
@@ -1099,7 +1099,7 @@ from (
 where 
 diff_inr = last_inr
 and diff_sodium = last_sodium
-and diff_albumin = last_albumin
+-- and diff_albumin = last_albumin
 and diff_creatinine = last_creatinine
 ;
 
