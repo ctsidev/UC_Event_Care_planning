@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:redcap="https://projectredcap.org" xsi:schemaLocation="http://www.cdisc.org/ns/odm/v1.3 schema/odm/ODM1-3-1.xsd" ODMVersion="1.3.1" FileOID="000-00-0000" FileType="Snapshot" Description="PCORI-ACP Recruitment" AsOfDateTime="2019-05-08T11:16:32" CreationDateTime="2019-05-08T11:16:32" SourceSystem="REDCap" SourceSystemVersion="8.5.28">
+<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:redcap="https://projectredcap.org" xsi:schemaLocation="http://www.cdisc.org/ns/odm/v1.3 schema/odm/ODM1-3-1.xsd" ODMVersion="1.3.1" FileOID="000-00-0000" FileType="Snapshot" Description="PCORI-ACP Recruitment" AsOfDateTime="2019-05-30T07:57:40" CreationDateTime="2019-05-30T07:57:40" SourceSystem="REDCap" SourceSystemVersion="8.5.28">
 <Study OID="Project.PCORIACPRecruitment">
 <GlobalVariables>
 	<StudyName>PCORI-ACP Recruitment</StudyName>
@@ -13,7 +13,7 @@
 	<redcap:PurposeOther>3</redcap:PurposeOther>
 	<redcap:ProjectNotes></redcap:ProjectNotes>
 </GlobalVariables>
-<MetaDataVersion OID="Metadata.PCORIACPRecruitment_2019-05-08_1116" Name="PCORI-ACP Recruitment" redcap:RecordIdField="study_id">
+<MetaDataVersion OID="Metadata.PCORIACPRecruitment_2019-05-30_0757" Name="PCORI-ACP Recruitment" redcap:RecordIdField="study_id">
 	<Protocol>
 		<StudyEventRef StudyEventOID="Event.event_baseline_arm_1" OrderNumber="1" Mandatory="No"/>
 		<StudyEventRef StudyEventOID="Event.event_12mo_arm_1" OrderNumber="2" Mandatory="No"/>
@@ -81,10 +81,16 @@
 		<ItemRef ItemOID="opt_out_pat_dt" Mandatory="No" redcap:Variable="opt_out_pat_dt"/>
 		<ItemRef ItemOID="ad_ever" Mandatory="No" redcap:Variable="ad_ever"/>
 		<ItemRef ItemOID="last_ad_dt" Mandatory="No" redcap:Variable="last_ad_dt"/>
-		<ItemRef ItemOID="email_sent_pcp_yn" Mandatory="No" redcap:Variable="email_sent_pcp_yn"/>
-		<ItemRef ItemOID="email_sent_pcp_dt" Mandatory="No" redcap:Variable="email_sent_pcp_dt"/>
+		<ItemRef ItemOID="first_email_sent_pcp_yn" Mandatory="No" redcap:Variable="first_email_sent_pcp_yn"/>
+		<ItemRef ItemOID="first_email_sent_pcp_dt" Mandatory="No" redcap:Variable="first_email_sent_pcp_dt"/>
+		<ItemRef ItemOID="second_email_sent_pcp_yn" Mandatory="No" redcap:Variable="second_email_sent_pcp_yn"/>
+		<ItemRef ItemOID="second_email_sent_pcp_dt" Mandatory="No" redcap:Variable="second_email_sent_pcp_dt"/>
 		<ItemRef ItemOID="patient_dead_yn" Mandatory="No" redcap:Variable="patient_dead_yn"/>
 		<ItemRef ItemOID="death_date" Mandatory="No" redcap:Variable="death_date"/>
+		<ItemRef ItemOID="language" Mandatory="No" redcap:Variable="language"/>
+		<ItemRef ItemOID="first_intervention_dt" Mandatory="No" redcap:Variable="first_intervention_dt"/>
+		<ItemRef ItemOID="twelve_months_yn" Mandatory="No" redcap:Variable="twelve_months_yn"/>
+		<ItemRef ItemOID="twentyfour_months_yn" Mandatory="No" redcap:Variable="twentyfour_months_yn"/>
 	</ItemGroupDef>
 	<ItemGroupDef OID="contact_enrollment.contact_enrollment_complete" Name="Form Status" Repeating="No">
 		<ItemRef ItemOID="contact_enrollment_complete" Mandatory="No" redcap:Variable="contact_enrollment_complete"/>
@@ -126,6 +132,7 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]" Repeating="No">
 		<ItemRef ItemOID="consent_hipaa_mail_dt" Mandatory="No" redcap:Variable="consent_hipaa_mail_dt"/>
 		<ItemRef ItemOID="consent_hipaa_rec_dt" Mandatory="No" redcap:Variable="consent_hipaa_rec_dt"/>
 		<ItemRef ItemOID="gift_card_mail_dt" Mandatory="No" redcap:Variable="gift_card_mail_dt"/>
+		<ItemRef ItemOID="max_calls_yn" Mandatory="No" redcap:Variable="max_calls_yn"/>
 	</ItemGroupDef>
 	<ItemGroupDef OID="baseline.baseline_complete" Name="Form Status" Repeating="No">
 		<ItemRef ItemOID="baseline_complete" Mandatory="No" redcap:Variable="baseline_complete"/>
@@ -169,6 +176,7 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]" Repeating="No">
 		<ItemRef ItemOID="gift_card_mail_dt_v12" Mandatory="No" redcap:Variable="gift_card_mail_dt_v12"/>
 		<ItemRef ItemOID="death_dt_v12" Mandatory="No" redcap:Variable="death_dt_v12"/>
 		<ItemRef ItemOID="survey_received_v12" Mandatory="No" redcap:Variable="survey_received_v12"/>
+		<ItemRef ItemOID="max_calls_yn_v12" Mandatory="No" redcap:Variable="max_calls_yn_v12"/>
 	</ItemGroupDef>
 	<ItemGroupDef OID="months_55a3.months_55a3_complete" Name="Form Status" Repeating="No">
 		<ItemRef ItemOID="months_55a3_complete" Mandatory="No" redcap:Variable="months_55a3_complete"/>
@@ -212,6 +220,7 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]" Repeating="No">
 		<ItemRef ItemOID="gift_card_mail_dt_v24" Mandatory="No" redcap:Variable="gift_card_mail_dt_v24"/>
 		<ItemRef ItemOID="death_dt_v24" Mandatory="No" redcap:Variable="death_dt_v24"/>
 		<ItemRef ItemOID="survey_received_v24" Mandatory="No" redcap:Variable="survey_received_v24"/>
+		<ItemRef ItemOID="max_calls_yn_v24" Mandatory="No" redcap:Variable="max_calls_yn_v24"/>
 	</ItemGroupDef>
 	<ItemGroupDef OID="months.months_complete" Name="Form Status" Repeating="No">
 		<ItemRef ItemOID="months_complete" Mandatory="No" redcap:Variable="months_complete"/>
@@ -255,6 +264,7 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]" Repeating="No">
 		<ItemRef ItemOID="gift_card_mail_dt_vad" Mandatory="No" redcap:Variable="gift_card_mail_dt_vad"/>
 		<ItemRef ItemOID="death_dt_vad" Mandatory="No" redcap:Variable="death_dt_vad"/>
 		<ItemRef ItemOID="survey_received_vad" Mandatory="No" redcap:Variable="survey_received_vad"/>
+		<ItemRef ItemOID="max_calls_yn_vad" Mandatory="No" redcap:Variable="max_calls_yn_vad"/>
 	</ItemGroupDef>
 	<ItemGroupDef OID="after_death.after_death_complete" Name="Form Status" Repeating="No">
 		<ItemRef ItemOID="after_death_complete" Mandatory="No" redcap:Variable="after_death_complete"/>
@@ -333,12 +343,19 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]" Repeating="No">
 	<ItemDef OID="last_ad_dt" Name="last_ad_dt" DataType="date" Length="999" redcap:Variable="last_ad_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy" redcap:BranchingLogic="[ad_ever] = &#039;1&#039;">
 		<Question><TranslatedText>Last AD date</TranslatedText></Question>
 	</ItemDef>
-	<ItemDef OID="email_sent_pcp_yn" Name="email_sent_pcp_yn" DataType="boolean" Length="1" redcap:Variable="email_sent_pcp_yn" redcap:FieldType="yesno">
-		<Question><TranslatedText>Email sent to PCP (yes/no)</TranslatedText></Question>
-		<CodeListRef CodeListOID="email_sent_pcp_yn.choices"/>
+	<ItemDef OID="first_email_sent_pcp_yn" Name="first_email_sent_pcp_yn" DataType="boolean" Length="1" redcap:Variable="first_email_sent_pcp_yn" redcap:FieldType="yesno">
+		<Question><TranslatedText>First email sent to PCP (yes/no)</TranslatedText></Question>
+		<CodeListRef CodeListOID="first_email_sent_pcp_yn.choices"/>
 	</ItemDef>
-	<ItemDef OID="email_sent_pcp_dt" Name="email_sent_pcp_dt" DataType="date" Length="999" redcap:Variable="email_sent_pcp_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy" redcap:BranchingLogic="[email_sent_pcp_yn] = &#039;1&#039;">
-		<Question><TranslatedText>Email sent to PCP (date)</TranslatedText></Question>
+	<ItemDef OID="first_email_sent_pcp_dt" Name="first_email_sent_pcp_dt" DataType="date" Length="999" redcap:Variable="first_email_sent_pcp_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy" redcap:BranchingLogic="[first_email_sent_pcp_yn] = &#039;1&#039;">
+		<Question><TranslatedText>First email sent to PCP (date)</TranslatedText></Question>
+	</ItemDef>
+	<ItemDef OID="second_email_sent_pcp_yn" Name="second_email_sent_pcp_yn" DataType="boolean" Length="1" redcap:Variable="second_email_sent_pcp_yn" redcap:FieldType="yesno">
+		<Question><TranslatedText>Second email sent to PCP (yes/no)</TranslatedText></Question>
+		<CodeListRef CodeListOID="second_email_sent_pcp_yn.choices"/>
+	</ItemDef>
+	<ItemDef OID="second_email_sent_pcp_dt" Name="second_email_sent_pcp_dt" DataType="date" Length="999" redcap:Variable="second_email_sent_pcp_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy" redcap:BranchingLogic="[first_email_sent_pcp_yn] = &#039;1&#039;">
+		<Question><TranslatedText>Second email sent to PCP (date)</TranslatedText></Question>
 	</ItemDef>
 	<ItemDef OID="patient_dead_yn" Name="patient_dead_yn" DataType="boolean" Length="1" redcap:Variable="patient_dead_yn" redcap:FieldType="yesno">
 		<Question><TranslatedText>Is the patient known to be deceased? (yes/no)</TranslatedText></Question>
@@ -346,6 +363,18 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]" Repeating="No">
 	</ItemDef>
 	<ItemDef OID="death_date" Name="death_date" DataType="date" Length="999" redcap:Variable="death_date" redcap:FieldType="text" redcap:TextValidationType="date_mdy" redcap:BranchingLogic="[patient_dead_yn] = &#039;1&#039;">
 		<Question><TranslatedText>Patient&#039;s death date</TranslatedText></Question>
+	</ItemDef>
+	<ItemDef OID="language" Name="language" DataType="text" Length="999" redcap:Variable="language" redcap:FieldType="text">
+		<Question><TranslatedText>Language</TranslatedText></Question>
+	</ItemDef>
+	<ItemDef OID="first_intervention_dt" Name="first_intervention_dt" DataType="date" Length="999" redcap:Variable="first_intervention_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy" redcap:FieldNote="The first intervention date is used to calculate the timeline for the 12 months and 24 months follow up.This date is populated from the database">
+		<Question><TranslatedText>First Intervention date</TranslatedText></Question>
+	</ItemDef>
+	<ItemDef OID="twelve_months_yn" Name="twelve_months_yn" DataType="float" Length="999" redcap:Variable="twelve_months_yn" redcap:FieldType="calc" redcap:Calculation="if (datediff([first_intervention_dt],&quot;today&quot;,&quot;d&quot;,&quot;mdy&quot;) &gt; 365 ,1,0)">
+		<Question><TranslatedText>Patient has reached the 12 months threshold since first intervention</TranslatedText></Question>
+	</ItemDef>
+	<ItemDef OID="twentyfour_months_yn" Name="twentyfour_months_yn" DataType="float" Length="999" redcap:Variable="twentyfour_months_yn" redcap:FieldType="calc" redcap:Calculation="if (datediff([first_intervention_dt],&quot;today&quot;,&quot;d&quot;,&quot;mdy&quot;) &gt; 730,1,0)">
+		<Question><TranslatedText>Patient has reached the 24 months threshold since first intervention</TranslatedText></Question>
 	</ItemDef>
 	<ItemDef OID="contact_enrollment_complete" Name="contact_enrollment_complete" DataType="text" Length="1" redcap:Variable="contact_enrollment_complete" redcap:FieldType="select" redcap:SectionHeader="Form Status">
 		<Question><TranslatedText>Complete?</TranslatedText></Question>
@@ -422,6 +451,10 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]">
 	</ItemDef>
 	<ItemDef OID="gift_card_mail_dt" Name="gift_card_mail_dt" DataType="date" Length="999" redcap:Variable="gift_card_mail_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy" redcap:BranchingLogic="[survey_completed_yn] = &#039;1&#039;">
 		<Question><TranslatedText>Date baseline Gift Card mailed</TranslatedText></Question>
+	</ItemDef>
+	<ItemDef OID="max_calls_yn" Name="max_calls_yn" DataType="boolean" Length="1" redcap:Variable="max_calls_yn" redcap:FieldType="yesno" redcap:FieldNote="If there is a date in the Phone Contact #3(date) field, this will be set to &#039;Yes&#039;" redcap:BranchingLogic="[contact3_dt] &gt;= &quot;today&quot;">
+		<Question><TranslatedText>Max calls reached? (yes/no)</TranslatedText></Question>
+		<CodeListRef CodeListOID="max_calls_yn.choices"/>
 	</ItemDef>
 	<ItemDef OID="baseline_complete" Name="baseline_complete" DataType="text" Length="1" redcap:Variable="baseline_complete" redcap:FieldType="select" redcap:SectionHeader="Form Status">
 		<Question><TranslatedText>Complete?</TranslatedText></Question>
@@ -505,6 +538,10 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]">
 	<ItemDef OID="survey_received_v12" Name="survey_received_v12" DataType="date" Length="999" redcap:Variable="survey_received_v12" redcap:FieldType="text" redcap:TextValidationType="date_mdy">
 		<Question><TranslatedText>Date Received 12 months Survey</TranslatedText></Question>
 	</ItemDef>
+	<ItemDef OID="max_calls_yn_v12" Name="max_calls_yn_v12" DataType="boolean" Length="1" redcap:Variable="max_calls_yn_v12" redcap:FieldType="yesno" redcap:FieldNote="If there is a date in the Phone Contact #3(date) field, this will be set to &#039;Yes&#039;" redcap:BranchingLogic="[contact3_dt_v12] &gt;= &quot;today&quot;">
+		<Question><TranslatedText>Max calls reached? (yes/no)</TranslatedText></Question>
+		<CodeListRef CodeListOID="max_calls_yn_v12.choices"/>
+	</ItemDef>
 	<ItemDef OID="months_55a3_complete" Name="months_55a3_complete" DataType="text" Length="1" redcap:Variable="months_55a3_complete" redcap:FieldType="select" redcap:SectionHeader="Form Status">
 		<Question><TranslatedText>Complete?</TranslatedText></Question>
 		<CodeListRef CodeListOID="months_55a3_complete.choices"/>
@@ -586,6 +623,10 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]">
 	</ItemDef>
 	<ItemDef OID="survey_received_v24" Name="survey_received_v24" DataType="date" Length="999" redcap:Variable="survey_received_v24" redcap:FieldType="text" redcap:TextValidationType="date_mdy">
 		<Question><TranslatedText>Date Received 24 months Survey</TranslatedText></Question>
+	</ItemDef>
+	<ItemDef OID="max_calls_yn_v24" Name="max_calls_yn_v24" DataType="boolean" Length="1" redcap:Variable="max_calls_yn_v24" redcap:FieldType="yesno" redcap:FieldNote="If there is a date in the Phone Contact #3(date) field, this will be set to &#039;Yes&#039;" redcap:BranchingLogic="[contact3_dt_v24] &gt;= &quot;today&quot;">
+		<Question><TranslatedText>Max calls reached? (yes/no)</TranslatedText></Question>
+		<CodeListRef CodeListOID="max_calls_yn_v24.choices"/>
 	</ItemDef>
 	<ItemDef OID="months_complete" Name="months_complete" DataType="text" Length="1" redcap:Variable="months_complete" redcap:FieldType="select" redcap:SectionHeader="Form Status">
 		<Question><TranslatedText>Complete?</TranslatedText></Question>
@@ -669,6 +710,10 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]">
 	<ItemDef OID="survey_received_vad" Name="survey_received_vad" DataType="date" Length="999" redcap:Variable="survey_received_vad" redcap:FieldType="text" redcap:TextValidationType="date_mdy">
 		<Question><TranslatedText>Date Received After Death Survey</TranslatedText></Question>
 	</ItemDef>
+	<ItemDef OID="max_calls_yn_vad" Name="max_calls_yn_vad" DataType="boolean" Length="1" redcap:Variable="max_calls_yn_vad" redcap:FieldType="yesno" redcap:FieldNote="If there is a date in the Phone Contact #3(date) field, this will be set to &#039;Yes&#039;" redcap:BranchingLogic="[contact3_dt_vad] &gt;= &quot;today&quot;">
+		<Question><TranslatedText>Max calls reached? (yes/no)</TranslatedText></Question>
+		<CodeListRef CodeListOID="max_calls_yn_vad.choices"/>
+	</ItemDef>
 	<ItemDef OID="after_death_complete" Name="after_death_complete" DataType="text" Length="1" redcap:Variable="after_death_complete" redcap:FieldType="select" redcap:SectionHeader="Form Status">
 		<Question><TranslatedText>Complete?</TranslatedText></Question>
 		<CodeListRef CodeListOID="after_death_complete.choices"/>
@@ -689,7 +734,11 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]">
 		<CodeListItem CodedValue="1"><Decode><TranslatedText>Yes</TranslatedText></Decode></CodeListItem>
 		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
 	</CodeList>
-	<CodeList OID="email_sent_pcp_yn.choices" Name="email_sent_pcp_yn" DataType="boolean" redcap:Variable="email_sent_pcp_yn">
+	<CodeList OID="first_email_sent_pcp_yn.choices" Name="first_email_sent_pcp_yn" DataType="boolean" redcap:Variable="first_email_sent_pcp_yn">
+		<CodeListItem CodedValue="1"><Decode><TranslatedText>Yes</TranslatedText></Decode></CodeListItem>
+		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
+	</CodeList>
+	<CodeList OID="second_email_sent_pcp_yn.choices" Name="second_email_sent_pcp_yn" DataType="boolean" redcap:Variable="second_email_sent_pcp_yn">
 		<CodeListItem CodedValue="1"><Decode><TranslatedText>Yes</TranslatedText></Decode></CodeListItem>
 		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
 	</CodeList>
@@ -723,6 +772,10 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]">
 		<CodeListItem CodedValue="1"><Decode><TranslatedText>Yes</TranslatedText></Decode></CodeListItem>
 		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
 	</CodeList>
+	<CodeList OID="max_calls_yn.choices" Name="max_calls_yn" DataType="boolean" redcap:Variable="max_calls_yn">
+		<CodeListItem CodedValue="1"><Decode><TranslatedText>Yes</TranslatedText></Decode></CodeListItem>
+		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
+	</CodeList>
 	<CodeList OID="baseline_complete.choices" Name="baseline_complete" DataType="text" redcap:Variable="baseline_complete">
 		<CodeListItem CodedValue="0"><Decode><TranslatedText>Incomplete</TranslatedText></Decode></CodeListItem>
 		<CodeListItem CodedValue="1"><Decode><TranslatedText>Unverified</TranslatedText></Decode></CodeListItem>
@@ -746,6 +799,10 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]">
 		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
 	</CodeList>
 	<CodeList OID="verbal_yn_v12.choices" Name="verbal_yn_v12" DataType="boolean" redcap:Variable="verbal_yn_v12">
+		<CodeListItem CodedValue="1"><Decode><TranslatedText>Yes</TranslatedText></Decode></CodeListItem>
+		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
+	</CodeList>
+	<CodeList OID="max_calls_yn_v12.choices" Name="max_calls_yn_v12" DataType="boolean" redcap:Variable="max_calls_yn_v12">
 		<CodeListItem CodedValue="1"><Decode><TranslatedText>Yes</TranslatedText></Decode></CodeListItem>
 		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
 	</CodeList>
@@ -775,6 +832,10 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]">
 		<CodeListItem CodedValue="1"><Decode><TranslatedText>Yes</TranslatedText></Decode></CodeListItem>
 		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
 	</CodeList>
+	<CodeList OID="max_calls_yn_v24.choices" Name="max_calls_yn_v24" DataType="boolean" redcap:Variable="max_calls_yn_v24">
+		<CodeListItem CodedValue="1"><Decode><TranslatedText>Yes</TranslatedText></Decode></CodeListItem>
+		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
+	</CodeList>
 	<CodeList OID="months_complete.choices" Name="months_complete" DataType="text" redcap:Variable="months_complete">
 		<CodeListItem CodedValue="0"><Decode><TranslatedText>Incomplete</TranslatedText></Decode></CodeListItem>
 		<CodeListItem CodedValue="1"><Decode><TranslatedText>Unverified</TranslatedText></Decode></CodeListItem>
@@ -798,6 +859,10 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]">
 		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
 	</CodeList>
 	<CodeList OID="verbal_yn_vad.choices" Name="verbal_yn_vad" DataType="boolean" redcap:Variable="verbal_yn_vad">
+		<CodeListItem CodedValue="1"><Decode><TranslatedText>Yes</TranslatedText></Decode></CodeListItem>
+		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
+	</CodeList>
+	<CodeList OID="max_calls_yn_vad.choices" Name="max_calls_yn_vad" DataType="boolean" redcap:Variable="max_calls_yn_vad">
 		<CodeListItem CodedValue="1"><Decode><TranslatedText>Yes</TranslatedText></Decode></CodeListItem>
 		<CodeListItem CodedValue="0"><Decode><TranslatedText>No</TranslatedText></Decode></CodeListItem>
 	</CodeList>
