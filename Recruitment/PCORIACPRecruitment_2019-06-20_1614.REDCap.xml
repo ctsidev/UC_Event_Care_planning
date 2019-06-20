@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:redcap="https://projectredcap.org" xsi:schemaLocation="http://www.cdisc.org/ns/odm/v1.3 schema/odm/ODM1-3-1.xsd" ODMVersion="1.3.1" FileOID="000-00-0000" FileType="Snapshot" Description="PCORI-ACP Recruitment" AsOfDateTime="2019-06-14T14:33:02" CreationDateTime="2019-06-14T14:33:02" SourceSystem="REDCap" SourceSystemVersion="8.5.28">
+<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:redcap="https://projectredcap.org" xsi:schemaLocation="http://www.cdisc.org/ns/odm/v1.3 schema/odm/ODM1-3-1.xsd" ODMVersion="1.3.1" FileOID="000-00-0000" FileType="Snapshot" Description="PCORI-ACP Recruitment" AsOfDateTime="2019-06-20T16:14:28" CreationDateTime="2019-06-20T16:14:28" SourceSystem="REDCap" SourceSystemVersion="8.5.28">
 <Study OID="Project.PCORIACPRecruitment">
 <GlobalVariables>
 	<StudyName>PCORI-ACP Recruitment</StudyName>
@@ -13,7 +13,7 @@
 	<redcap:PurposeOther>3</redcap:PurposeOther>
 	<redcap:ProjectNotes></redcap:ProjectNotes>
 </GlobalVariables>
-<MetaDataVersion OID="Metadata.PCORIACPRecruitment_2019-06-14_1433" Name="PCORI-ACP Recruitment" redcap:RecordIdField="study_id">
+<MetaDataVersion OID="Metadata.PCORIACPRecruitment_2019-06-20_1614" Name="PCORI-ACP Recruitment" redcap:RecordIdField="study_id">
 	<Protocol>
 		<StudyEventRef StudyEventOID="Event.event_baseline_arm_1" OrderNumber="1" Mandatory="No"/>
 		<StudyEventRef StudyEventOID="Event.event_12mo_arm_1" OrderNumber="2" Mandatory="No"/>
@@ -69,8 +69,10 @@
 		<ItemRef ItemOID="clinic" Mandatory="No" redcap:Variable="clinic"/>
 		<ItemRef ItemOID="arm" Mandatory="No" redcap:Variable="arm"/>
 		<ItemRef ItemOID="home_phone" Mandatory="No" redcap:Variable="home_phone"/>
+		<ItemRef ItemOID="cell_phone" Mandatory="No" redcap:Variable="cell_phone"/>
 		<ItemRef ItemOID="work_phone" Mandatory="No" redcap:Variable="work_phone"/>
 		<ItemRef ItemOID="other_phone" Mandatory="No" redcap:Variable="other_phone"/>
+		<ItemRef ItemOID="phone_priority_hcwo" Mandatory="No" redcap:Variable="phone_priority_hcwo"/>
 		<ItemRef ItemOID="pat_email_address" Mandatory="No" redcap:Variable="pat_email_address"/>
 		<ItemRef ItemOID="ineligible_intervention_yn" Mandatory="No" redcap:Variable="ineligible_intervention_yn"/>
 		<ItemRef ItemOID="caregiver_name" Mandatory="No" redcap:Variable="caregiver_name"/>
@@ -306,11 +308,17 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]" Repeating="No">
 	<ItemDef OID="home_phone" Name="home_phone" DataType="text" Length="999" redcap:Variable="home_phone" redcap:FieldType="text">
 		<Question><TranslatedText>Home Phone number</TranslatedText></Question>
 	</ItemDef>
+	<ItemDef OID="cell_phone" Name="cell_phone" DataType="text" Length="999" redcap:Variable="cell_phone" redcap:FieldType="text">
+		<Question><TranslatedText>Cell Phone number</TranslatedText></Question>
+	</ItemDef>
 	<ItemDef OID="work_phone" Name="work_phone" DataType="text" Length="999" redcap:Variable="work_phone" redcap:FieldType="text">
 		<Question><TranslatedText>Work Phone number</TranslatedText></Question>
 	</ItemDef>
 	<ItemDef OID="other_phone" Name="other_phone" DataType="text" Length="999" redcap:Variable="other_phone" redcap:FieldType="text">
 		<Question><TranslatedText>Other Phone number</TranslatedText></Question>
+	</ItemDef>
+	<ItemDef OID="phone_priority_hcwo" Name="phone_priority_hcwo" DataType="text" Length="999" redcap:Variable="phone_priority_hcwo" redcap:FieldType="text" redcap:FieldNote="The numbers shows the calling priority defined by the patient, 1 being the best number to call, 2 the second, and so forth. Match phone number to their ranking based on the following order  (Home | Cell | Work | Other)">
+		<Question><TranslatedText>Phone priority contact. (Home | Cell | Work | Other)</TranslatedText></Question>
 	</ItemDef>
 	<ItemDef OID="pat_email_address" Name="pat_email_address" DataType="text" Length="999" redcap:Variable="pat_email_address" redcap:FieldType="text" redcap:TextValidationType="email">
 		<Question><TranslatedText>Patient email address</TranslatedText></Question>
