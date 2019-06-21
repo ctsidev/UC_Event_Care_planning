@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:redcap="https://projectredcap.org" xsi:schemaLocation="http://www.cdisc.org/ns/odm/v1.3 schema/odm/ODM1-3-1.xsd" ODMVersion="1.3.1" FileOID="000-00-0000" FileType="Snapshot" Description="PCORI-ACP Recruitment" AsOfDateTime="2019-06-20T16:14:28" CreationDateTime="2019-06-20T16:14:28" SourceSystem="REDCap" SourceSystemVersion="8.5.28">
+<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3" xmlns:ds="http://www.w3.org/2000/09/xmldsig#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:redcap="https://projectredcap.org" xsi:schemaLocation="http://www.cdisc.org/ns/odm/v1.3 schema/odm/ODM1-3-1.xsd" ODMVersion="1.3.1" FileOID="000-00-0000" FileType="Snapshot" Description="PCORI-ACP Recruitment" AsOfDateTime="2019-06-21T12:43:03" CreationDateTime="2019-06-21T12:43:03" SourceSystem="REDCap" SourceSystemVersion="8.5.28">
 <Study OID="Project.PCORIACPRecruitment">
 <GlobalVariables>
 	<StudyName>PCORI-ACP Recruitment</StudyName>
@@ -13,7 +13,7 @@
 	<redcap:PurposeOther>3</redcap:PurposeOther>
 	<redcap:ProjectNotes></redcap:ProjectNotes>
 </GlobalVariables>
-<MetaDataVersion OID="Metadata.PCORIACPRecruitment_2019-06-20_1614" Name="PCORI-ACP Recruitment" redcap:RecordIdField="study_id">
+<MetaDataVersion OID="Metadata.PCORIACPRecruitment_2019-06-21_1243" Name="PCORI-ACP Recruitment" redcap:RecordIdField="study_id">
 	<Protocol>
 		<StudyEventRef StudyEventOID="Event.event_baseline_arm_1" OrderNumber="1" Mandatory="No"/>
 		<StudyEventRef StudyEventOID="Event.event_12mo_arm_1" OrderNumber="2" Mandatory="No"/>
@@ -135,8 +135,10 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]" Repeating="No">
 		<ItemRef ItemOID="contact3_dt" Mandatory="No" redcap:Variable="contact3_dt"/>
 		<ItemRef ItemOID="contact3_nt" Mandatory="No" redcap:Variable="contact3_nt"/>
 		<ItemRef ItemOID="verbal_yn" Mandatory="No" redcap:Variable="verbal_yn"/>
-		<ItemRef ItemOID="consent_hipaa_mail_dt" Mandatory="No" redcap:Variable="consent_hipaa_mail_dt"/>
-		<ItemRef ItemOID="consent_hipaa_rec_dt" Mandatory="No" redcap:Variable="consent_hipaa_rec_dt"/>
+		<ItemRef ItemOID="consent_mailed_dt" Mandatory="No" redcap:Variable="consent_mailed_dt"/>
+		<ItemRef ItemOID="consent_received_dt" Mandatory="No" redcap:Variable="consent_received_dt"/>
+		<ItemRef ItemOID="hipaa_mailed_dt" Mandatory="No" redcap:Variable="hipaa_mailed_dt"/>
+		<ItemRef ItemOID="hipaa_received_dt" Mandatory="No" redcap:Variable="hipaa_received_dt"/>
 		<ItemRef ItemOID="gift_card_mail_dt" Mandatory="No" redcap:Variable="gift_card_mail_dt"/>
 		<ItemRef ItemOID="max_calls_yn" Mandatory="No" redcap:Variable="max_calls_yn"/>
 	</ItemGroupDef>
@@ -468,11 +470,17 @@ Opted our by Patient: [event_baseline_arm_1][opt_out_pat_dt]">
 		<Question><TranslatedText>Verbal Consent Obtained?</TranslatedText></Question>
 		<CodeListRef CodeListOID="verbal_yn.choices"/>
 	</ItemDef>
-	<ItemDef OID="consent_hipaa_mail_dt" Name="consent_hipaa_mail_dt" DataType="date" Length="999" redcap:Variable="consent_hipaa_mail_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy">
-		<Question><TranslatedText>Consent and HIPAA form mailed (date)</TranslatedText></Question>
+	<ItemDef OID="consent_mailed_dt" Name="consent_mailed_dt" DataType="date" Length="999" redcap:Variable="consent_mailed_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy">
+		<Question><TranslatedText>Consent form mailed (date)</TranslatedText></Question>
 	</ItemDef>
-	<ItemDef OID="consent_hipaa_rec_dt" Name="consent_hipaa_rec_dt" DataType="date" Length="999" redcap:Variable="consent_hipaa_rec_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy">
-		<Question><TranslatedText>Consent and HIPAA form received(date)</TranslatedText></Question>
+	<ItemDef OID="consent_received_dt" Name="consent_received_dt" DataType="date" Length="999" redcap:Variable="consent_received_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy">
+		<Question><TranslatedText>Consent form received(date)</TranslatedText></Question>
+	</ItemDef>
+	<ItemDef OID="hipaa_mailed_dt" Name="hipaa_mailed_dt" DataType="date" Length="999" redcap:Variable="hipaa_mailed_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy">
+		<Question><TranslatedText>HIPAA form mailed(date)</TranslatedText></Question>
+	</ItemDef>
+	<ItemDef OID="hipaa_received_dt" Name="hipaa_received_dt" DataType="date" Length="999" redcap:Variable="hipaa_received_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy">
+		<Question><TranslatedText>HIPAA form received(date)</TranslatedText></Question>
 	</ItemDef>
 	<ItemDef OID="gift_card_mail_dt" Name="gift_card_mail_dt" DataType="date" Length="999" redcap:Variable="gift_card_mail_dt" redcap:FieldType="text" redcap:TextValidationType="date_mdy" redcap:BranchingLogic="[survey_completed_yn] = &#039;1&#039;">
 		<Question><TranslatedText>Date baseline Gift Card mailed</TranslatedText></Question>
