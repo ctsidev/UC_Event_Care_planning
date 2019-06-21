@@ -32,7 +32,22 @@ SELECT DISTINCT st.study_id as "study_id"
                 ,zla.name as "language"
                 ,zla2.name as "preferred_language"
                 ,case when emp.system_login is null then '' else LOWER(emp.system_login) || '@mednet.ucla.edu' end "pcp_email"
-                ,CASE WHEN EXCLUSION_REASON = 'patient deceased' THEN 1 ELSE 0 END "patient_dead_yn"
+                ,CASE WHEN coh.EXCLUSION_REASON = 'patient deceased' THEN 1 ELSE 0 END "patient_dead_yn"
+				
+				--phone contact prioritization
+				,concat(
+						concat(
+								concat(case when cm1.CONTACT_PRIORITY is not null then cm1.CONTACT_PRIORITY
+											when cm1.CONTACT_PRIORITY is null then 0 end ,  '| '  )
+								,concat(case when cm2.CONTACT_PRIORITY is not null then cm2.CONTACT_PRIORITY 
+											when cm2.CONTACT_PRIORITY is null then 0 end,'| ' )
+								)
+						,concat(
+								concat(case when cm3.CONTACT_PRIORITY is not null then cm3.CONTACT_PRIORITY 
+											when cm3.CONTACT_PRIORITY is null then 0 end ,'| ' )
+								,case when cm4.CONTACT_PRIORITY is not null then cm4.CONTACT_PRIORITY 
+										when cm4.CONTACT_PRIORITY is null then 0 end) 
+						  ) as  "Phone_priority_HCWO"
                 -------------------------
                 --pending
                 ------------------------------
@@ -40,7 +55,8 @@ SELECT DISTINCT st.study_id as "study_id"
 --               add a field to flag patients who became restricted after being selected for the cohort
 --                ,CASE WHEN EXCLUSION_REASON = 'patient deceased' THEN EXCLUSION_DATE ELSE NULL END "death_date"
 
-FROM XDR_ACP_COHORT			            coh --ON st.pat_id = coh.pat_id
+FROM xdr_acp_cohort_study_id            st
+JOIN XDR_ACP_COHORT			            coh ON st.pat_id = coh.pat_id
 LEFT JOIN patient			            pat ON coh.pat_id = pat.pat_id
 LEFT JOIN V_CUBE_D_PROVIDER             prv ON coh.cur_pcp_prov_id = prv.provider_id
 --join to pull the clinic name (we have a departments table at UCLA
@@ -49,9 +65,12 @@ LEFT JOIN zc_state  					xst ON pat.state_c = xst.state_c
 LEFT JOIN ZC_LANGUAGE                   zla on coh.LANGUAGE_C = zla.LANGUAGE_C
 LEFT JOIN ZC_LANGUAGE                   zla2 on pat.LANG_CARE_C = zla2.LANGUAGE_C
 LEFT JOIN CLARITY_emp                   emp ON  coh.cur_pcp_prov_id = emp.prov_id
-left join clarity.OTHER_COMMUNCTN  cm1 on coh.pat_id = cm1.pat_id and cm1.OTHER_COMMUNIC_C = 7 --Home Phone
-left join clarity.OTHER_COMMUNCTN cm2 on coh.pat_id = cm2.pat_id and cm2.OTHER_COMMUNIC_C = 8 --Work Phone
-left join clarity.OTHER_COMMUNCTN cm3 on coh.pat_id = cm3.pat_id and cm3.OTHER_COMMUNIC_C = 1 --Cell Phone
+--phone number collection and prioritization
+left join OTHER_COMMUNCTN cm1 on coh.pat_id = cm1.pat_id and cm1.OTHER_COMMUNIC_C = 7 --Home Phone
+left join OTHER_COMMUNCTN cm2 on coh.pat_id = cm2.pat_id and cm2.OTHER_COMMUNIC_C = 1 --Cell Phone
+left join OTHER_COMMUNCTN cm3 on coh.pat_id = cm3.pat_id and cm3.OTHER_COMMUNIC_C = 8 --Work Phone
+left join OTHER_COMMUNCTN cm4 on coh.pat_id = cm4.pat_id and cm4.OTHER_COMMUNIC_C = 999 --Other Phone
+left join XDR_ACP_COHORT_bk_05172019    prm on coh.pat_id = prm.pat_id and prm.prime = 1
 where 
     -- patients in the PCORI cohort
     coh.selected = 1
@@ -59,5 +78,7 @@ where
     and (coh.EXCLUSION_REASON is null or coh.EXCLUSION_REASON <> 'patient restricted')
     -- patients without an AD in the last three years, or not AD at all
     and (coh.ad_polst_all = 0 OR (current_DATe - coh.LAST_AD_POLST) BETWEEN 0 AND 365.25 *3)
-order by study_id
-;--5042
+    -- patients not already in PRIME
+    and prm.pat_id is null
+order by st.study_id
+;--4631
