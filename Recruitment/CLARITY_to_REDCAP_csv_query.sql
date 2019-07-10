@@ -34,9 +34,8 @@ SELECT DISTINCT st.study_id as "study_id"
                 ,coh.LAST_AD_POLST as "last_ad_dt"
                 ,zla.name as "language"
                 ,zla2.name as "preferred_language"
-				,zla3.name as "preferred_language_writternmaterial"
+				,zla3.name as "preferred_lang_writtenmaterial"
 				,emp.email as "pcp_email"
-                ,case when emp.system_login is null then '' else LOWER(emp.system_login) || '@mednet.ucla.edu' end "pcp_email2"
 				--UCLA specific, exclude deceased patients
                 ,CASE WHEN coh.EXCLUSION_REASON = 'patient deceased' THEN 1 ELSE 0 END "patient_dead_yn"
 				
@@ -71,7 +70,6 @@ LEFT JOIN zc_state  					xst ON pat.state_c = xst.state_c
 LEFT JOIN ZC_LANGUAGE                   zla on coh.LANGUAGE_C = zla.LANGUAGE_C    --  value associated with the patient’s language 
 LEFT JOIN ZC_LANGUAGE                   zla2 on pat.LANG_CARE_C = zla2.LANGUAGE_C -- The patient's preferred language to receive care. 
 LEFT JOIN ZC_LANGUAGE                   zla3 on pat.LANG_WRIT_C = zla3.LANGUAGE_C -- The patient's preferred language to receive written material 
-
 Left join CLARITY_SER					SER ON coh.cur_pcp_prov_id = SER.prov_id
 LEFT JOIN CLARITY_EMP_DEMO              emp ON  emp.USER_ID =ser.USER_ID 
 
