@@ -34,7 +34,7 @@ SELECT DISTINCT st.study_id as "study_id"
                 ,coh.LAST_AD_POLST as "last_ad_dt"
                 ,zla.name as "language"
                 ,zla2.name as "preferred_language"
-				,zla3.name as "preferred_lang_writtenmaterial"
+				,zla3.name as "preferred_lang_written_mat"
 				--,emp.email as "pcp_email" -- At UCLA this field doesn't contain the provider's email address
                 
                 ,case when emp2.system_login is null then '' else LOWER(emp2.system_login) || '@mednet.ucla.edu' end "pcp_email"
