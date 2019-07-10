@@ -8,16 +8,18 @@ SELECT DISTINCT st.study_id as "study_id"
                 ,coh.arm as "arm"
 				 ,CASE
                   WHEN pat.add_line_1 IS NULL 
+   				   AND pat.add_line_2 IS NULL
                    AND pat.city IS NULL
                    AND pat.state_c IS NULL
                    AND pat.zip IS NULL
                     THEN NULL
                     ELSE pat.add_line_1 
+					  || ' ' || pat.add_line_2 
                       || ', ' || pat.city 
                       || ', ' || xst.abbr
                       || ' '  || pat.zip       
                 END AS address
-                ,pat.email_address as "email_address"
+                --,pat.email_address as "email_address"		__UCLA is going to ask patient's for their email directly
 --                ,pat.add_line_1 as "address"
 --                ,pat.city as "city"
 --                ,xst.abbr as "state"
@@ -27,11 +29,15 @@ SELECT DISTINCT st.study_id as "study_id"
                 ,cm1.OTHER_COMMUNIC_NUM as "home_phone"
                 ,cm2.OTHER_COMMUNIC_NUM as "work_phone"
                 ,cm3.OTHER_COMMUNIC_NUM as "cell_phone"
+				,cm4.OTHER_COMMUNIC_NUM as "Other_phone"
                 ,coh.ad_polst_all as "ad_ever"
                 ,coh.LAST_AD_POLST as "last_ad_dt"
                 ,zla.name as "language"
                 ,zla2.name as "preferred_language"
-                ,case when emp.system_login is null then '' else LOWER(emp.system_login) || '@mednet.ucla.edu' end "pcp_email"
+				,zla3.name as "preferred_language_writternmaterial"
+				,emp.email as "pcp_email"
+                ,case when emp.system_login is null then '' else LOWER(emp.system_login) || '@mednet.ucla.edu' end "pcp_email2"
+				--UCLA specific, exclude deceased patients
                 ,CASE WHEN coh.EXCLUSION_REASON = 'patient deceased' THEN 1 ELSE 0 END "patient_dead_yn"
 				
 				--phone contact prioritization
@@ -62,14 +68,19 @@ LEFT JOIN V_CUBE_D_PROVIDER             prv ON coh.cur_pcp_prov_id = prv.provide
 --join to pull the clinic name (we have a departments table at UCLA
 left join i2b2.lz_clarity_dept          dep on coh.clinic_id = dep.loc_id 
 LEFT JOIN zc_state  					xst ON pat.state_c = xst.state_c
-LEFT JOIN ZC_LANGUAGE                   zla on coh.LANGUAGE_C = zla.LANGUAGE_C
-LEFT JOIN ZC_LANGUAGE                   zla2 on pat.LANG_CARE_C = zla2.LANGUAGE_C
-LEFT JOIN CLARITY_emp                   emp ON  coh.cur_pcp_prov_id = emp.prov_id
+LEFT JOIN ZC_LANGUAGE                   zla on coh.LANGUAGE_C = zla.LANGUAGE_C    --  value associated with the patient’s language 
+LEFT JOIN ZC_LANGUAGE                   zla2 on pat.LANG_CARE_C = zla2.LANGUAGE_C -- The patient's preferred language to receive care. 
+LEFT JOIN ZC_LANGUAGE                   zla3 on pat.LANG_WRIT_C = zla3.LANGUAGE_C -- The patient's preferred language to receive written material 
+
+Left join CLARITY_SER					SER ON coh.cur_pcp_prov_id = SER.prov_id
+LEFT JOIN CLARITY_EMP_DEMO              emp ON  emp.USER_ID =ser.USER_ID 
+
 --phone number collection and prioritization
 left join OTHER_COMMUNCTN cm1 on coh.pat_id = cm1.pat_id and cm1.OTHER_COMMUNIC_C = 7 --Home Phone
 left join OTHER_COMMUNCTN cm2 on coh.pat_id = cm2.pat_id and cm2.OTHER_COMMUNIC_C = 1 --Cell Phone
 left join OTHER_COMMUNCTN cm3 on coh.pat_id = cm3.pat_id and cm3.OTHER_COMMUNIC_C = 8 --Work Phone
 left join OTHER_COMMUNCTN cm4 on coh.pat_id = cm4.pat_id and cm4.OTHER_COMMUNIC_C = 999 --Other Phone
+-- The following JOIN is UCLA specific
 left join XDR_ACP_COHORT_bk_05172019    prm on coh.pat_id = prm.pat_id and prm.prime = 1
 where 
     -- patients in the PCORI cohort
@@ -78,7 +89,7 @@ where
     and (coh.EXCLUSION_REASON is null or coh.EXCLUSION_REASON <> 'patient restricted')
     -- patients without an AD in the last three years, or not AD at all
     and (coh.ad_polst_all = 0 OR (current_DATe - coh.LAST_AD_POLST) BETWEEN 0 AND 365.25 *3)
-    -- patients not already in PRIME
+    -- patients not already in PRIME (UCLA specific)
     and prm.pat_id is null
 order by st.study_id
 ;--4631
