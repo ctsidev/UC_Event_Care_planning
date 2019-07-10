@@ -35,7 +35,9 @@ SELECT DISTINCT st.study_id as "study_id"
                 ,zla.name as "language"
                 ,zla2.name as "preferred_language"
 				,zla3.name as "preferred_lang_writtenmaterial"
-				,emp.email as "pcp_email"
+				--,emp.email as "pcp_email" -- At UCLA this field doesn't contain the provider's email address
+                
+                ,case when emp2.system_login is null then '' else LOWER(emp2.system_login) || '@mednet.ucla.edu' end "pcp_email"
 				--UCLA specific, exclude deceased patients
                 ,CASE WHEN coh.EXCLUSION_REASON = 'patient deceased' THEN 1 ELSE 0 END "patient_dead_yn"
 				
@@ -70,8 +72,10 @@ LEFT JOIN zc_state  					xst ON pat.state_c = xst.state_c
 LEFT JOIN ZC_LANGUAGE                   zla on coh.LANGUAGE_C = zla.LANGUAGE_C    --  value associated with the patient’s language 
 LEFT JOIN ZC_LANGUAGE                   zla2 on pat.LANG_CARE_C = zla2.LANGUAGE_C -- The patient's preferred language to receive care. 
 LEFT JOIN ZC_LANGUAGE                   zla3 on pat.LANG_WRIT_C = zla3.LANGUAGE_C -- The patient's preferred language to receive written material 
-Left join CLARITY_SER					SER ON coh.cur_pcp_prov_id = SER.prov_id
-LEFT JOIN CLARITY_EMP_DEMO              emp ON  emp.USER_ID =ser.USER_ID 
+LEFT JOIN CLARITY_emp                   emp2 ON  coh.cur_pcp_prov_id = emp2.prov_id
+-- the follwing two joins can yield the provider's email address
+--Left join CLARITY_SER					SER ON coh.cur_pcp_prov_id = SER.prov_id
+--LEFT JOIN CLARITY_EMP_DEMO              emp ON  emp.USER_ID =ser.USER_ID 
 
 --phone number collection and prioritization
 left join OTHER_COMMUNCTN cm1 on coh.pat_id = cm1.pat_id and cm1.OTHER_COMMUNIC_C = 7 --Home Phone
