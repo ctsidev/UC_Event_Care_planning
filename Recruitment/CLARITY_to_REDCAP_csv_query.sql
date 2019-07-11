@@ -6,7 +6,8 @@ SELECT DISTINCT st.study_id as "study_id"
                 ,dep.loc_name as "clinic"
                 ,prv.provider_name as "pcp"
                 ,coh.arm as "arm"
-				 ,CASE
+				--if you are using Oracle, this is the statement to merge the patient's address together				
+				,CASE
                   WHEN pat.add_line_1 IS NULL 
    				   AND pat.add_line_2 IS NULL
                    AND pat.city IS NULL
@@ -19,6 +20,9 @@ SELECT DISTINCT st.study_id as "study_id"
                       || ', ' || xst.abbr
                       || ' '  || pat.zip       
                 END AS address
+				--if you are using MSSQL, this is the statement to merge the patient's address together
+				-- concat(pat.add_line_1 , ' ', pat.add_line_2, ', ', pat.city ,  ', ' , xst.abbr , ' ' , pat.zip ) END AS address
+				
                 --,pat.email_address as "email_address"		__UCLA is going to ask patient's for their email directly
 --                ,pat.add_line_1 as "address"
 --                ,pat.city as "city"
