@@ -7,7 +7,7 @@ SELECT DISTINCT st.study_id as "study_id"
                 ,coh.arm as "arm_grey"                
                 ,prv.provider_name as "original_pcp"
 				--,emp.email as "pcp_email" -- At UCLA this field doesn't contain the provider's email address
-                ,case when emp2.system_login is null then '' else LOWER(emp2.system_login) || '@mednet.ucla.edu' end "pcp_email"
+                ,case when emp2.system_login is null then '' else LOWER(emp2.system_login) || '@mednet.ucla.edu' end "original_pcp_email"
 
 				--if you are using Oracle, this is the statement to merge the patient's address together				
 				,CASE
@@ -32,7 +32,7 @@ SELECT DISTINCT st.study_id as "study_id"
                 ,cm3.OTHER_COMMUNIC_NUM as "cell_phone"
 				,cm4.OTHER_COMMUNIC_NUM as "Other_phone"
                 ,coh.ad_polst_all as "ad_ever"
-                ,coh.LAST_AD_POLST as "last_ad_dt"
+                ,to_char(coh.LAST_AD_POLST, 'mm-dd-yyyy')  as "last_ad_dt"
                 ,zla.name as "language"
                 ,zla2.name as "preferred_language"
 				,zla3.name as "preferred_lang_written_mat"
