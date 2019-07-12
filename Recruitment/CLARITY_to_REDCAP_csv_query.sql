@@ -94,7 +94,7 @@ where
     --exclude patients that are restricted
     and (coh.EXCLUSION_REASON is null or coh.EXCLUSION_REASON <> 'patient restricted')
     -- patients without an AD in the last three years, or not AD at all
-    and (coh.ad_polst_all = 0 OR (current_DATe - coh.LAST_AD_POLST) BETWEEN 0 AND 365.25 *3)
+    and (coh.ad_polst_all = 0 OR (current_DATe - coh.LAST_AD_POLST) > 365.25 *3)
     -- patients not already in PRIME (UCLA specific)
     and prm.pat_id is null
 order by st.study_id
