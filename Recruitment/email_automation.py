@@ -19,6 +19,7 @@ Additional features:
         Other features
             Integrate PCP name in the email body (done, 5/26/19)
             Use file for email text (done, 5/29/19)
+            Create variables for all files locations (done 7/15/19)
 """
 # ----------------------------------------------
 # import the following libraries
@@ -35,11 +36,6 @@ from pytz import timezone
 # ----------------------------------------------
 # Variables
 # ----------------------------------------------
-text = ''
-html = ''
-email_count = 0
-#path_to_redcap_file = 'C:/Users/jsanz/Downloads/PCORI.csv'
-path_to_redcap_report = 'C:/Users/jsanz/Downloads/send_email_report.csv'
 # create list to hold PCPs and patient panels for each one
 patient_panel = []
 
@@ -49,19 +45,31 @@ pat_count = 1
 # set up a second pcp_email field to identified when the patient list changes
 # to a different provider
 prev_pcp_email = ''
+text = ''
+html = ''
+email_count = 0
+
+# the next variables are ALL site specific
+path_to_input_file = 'H:/Projects/Wenger/data/input_file.csv'
+path_to_output_file = 'H:/Projects/Wenger/data/output_file.csv'
+path_to_letter_txt_file = 'C:/Users/jsanz/Documents/GitHub/UC_Event_Care_planning/Recruitment/letter.txt'
+path_to_letter_html_file = 'C:/Users/jsanz/Documents/GitHub/UC_Event_Care_planning/Recruitment/letter.html'
 sender_email = 'UC Health Care Planning <UCHealthCarePlanning@mednet.ucla.edu>'
+# this is just a placeholder, change it to your SMTP server info
+smtp_server = 'smtp.server.uc.edu'
+
 # ----------------------------------------------
 # Functions
 # ----------------------------------------------
 # reset emails (plain and html)
 # Include paths to letter templates (plain and html)
 def get_text():
-    with open('C:/Users/jsanz/Documents/GitHub/UC_Event_Care_planning/Recruitment/letter.txt', 'r') as myfile:
+    with open(path_to_letter_txt_file, 'r') as myfile:
         text = myfile.read()
     return text
 
 def get_html():
-    with open('C:/Users/jsanz/Documents/GitHub/UC_Event_Care_planning/Recruitment/letter.html', 'r') as myfile:
+    with open(path_to_letter_html_file, 'r') as myfile:
         html = myfile.read()
     return html
 
@@ -79,9 +87,10 @@ def send_email(receiver_email, receiver_name, patient_panel):
         # capture present time for report
         los_angeles_time = timezone('America/Los_Angeles')
         ts = datetime.now(los_angeles_time)
-        start_time = str(ts.strftime("%Y-%m-%d %H:%M:%S"))
+        start_time = str(ts.strftime("%Y-%m-%d"))
+#        start_time = str(ts.strftime("%Y-%m-%d %H:%M:%S"))
         # save patient record to report
-        email_sent_report.write(str(item[0]) + ',1,' + start_time + '\n')
+        email_sent_report.write(str(item[0]) + ',event_baseline_arm_1,1,' + start_time + '\n')
 
     # Generate plain email version
     text = text.format(patients=tabulate(patient_table, headers="firstrow",
@@ -97,12 +106,12 @@ def send_email(receiver_email, receiver_name, patient_panel):
     # set up message parameters
     message = MIMEMultipart("alternative", None, [MIMEText(text, 'plain'),
                                                   MIMEText(html, 'html')])
-    message['Subject'] = 'UC Health Advance Care Planning Study'
+    message['Subject'] = 'UC Health Advance Care Planning Study  - Respond by 7/29/19'
     message['From'] = sender_email
     message['To'] = receiver_email
 
     # set up SMTP server parameters
-    server = smtplib.SMTP('SMTP server')
+    server = smtplib.SMTP(smtp_server)
     server.ehlo()
     server.sendmail(sender_email, receiver_email, message.as_string())
     server.quit()
@@ -114,18 +123,20 @@ def send_email(receiver_email, receiver_name, patient_panel):
 # ----------------------------------------------
 # Read data file
 # ----------------------------------------------
-with open('C:/Users/jsanz/Downloads/PCORI.csv') as f:
+with open(path_to_input_file,'r') as f:
     reader = csv.reader(f)
+    print(f)
     pcp_patient_list = list(reader)
 # delete   headers
 del pcp_patient_list[0]
 
 # open file to save sent email report. It shall be changed for the second run
-email_sent_report = open('path_to_redcap_report', 'w')
-email_sent_report.write('study_id,first_email_sent_pcp_yn,first_email_sent_pcp_dt\n')
+#email_sent_report = open('C:/Users/jsanz/Desktop/Advisory_Group_Meeting/PCORI.csv', 'w')
+email_sent_report = open(path_to_output_file, 'w')
+email_sent_report.write('study_id,redcap_event_name,first_email_sent_pcp_yn,first_email_sent_pcp_dt\n')
 
 
-# Loop through PCP-patient list, for every PCP, do an subloop to find all pats
+# Loop through PCP-patient list, for every PCP, do a subloop to find all pats
 for record in pcp_patient_list:
     # Save PCP email and PCP name to variables
     pcp_email = str(record[3])
