@@ -20,6 +20,7 @@ Additional features:
             Integrate PCP name in the email body (done, 5/26/19)
             Use file for email text (done, 5/29/19)
             Create variables for all files locations (done 7/15/19)
+            Include alternative SMTP server configuration when authentication is required (7/19/19)
 """
 # ----------------------------------------------
 # import the following libraries
@@ -58,6 +59,12 @@ sender_email = 'UC Health Care Planning <UCHealthCarePlanning@mednet.ucla.edu>'
 # this is just a placeholder, change it to your SMTP server info
 smtp_server = 'smtp.server.uc.edu'
 
+# if your SMTP server requires authentication, you will need variables as well
+# and additionally, you will to make a modification when connecting to the
+# server
+email_smtp_port = '587'
+email_user = 'UCHealthCarePlanning@mednet.ucla.edu'
+email_password = 'mypassword'
 # ----------------------------------------------
 # Functions
 # ----------------------------------------------
@@ -115,6 +122,13 @@ def send_email(receiver_email, receiver_name, patient_panel):
     server.ehlo()
     server.sendmail(sender_email, receiver_email, message.as_string())
     server.quit()
+
+    # ALTERNATIVE set up SMTP server parameters IF authentication required
+#    server = smtplib.SMTP(smtp_server,int(email_smtp_port))
+#    server.starttls()
+#    server.login(email_user, email_password)
+#    server.sendmail(sender_email, receiver_email, message.as_string())
+#    server.quit()
 
 # Reset text and html fields
     text = get_text()
