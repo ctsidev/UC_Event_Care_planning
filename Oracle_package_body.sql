@@ -1437,6 +1437,8 @@ WHERE DOC_STAT_C = 35';
 --	"COMPONENT_ID" NUMBER, 
 --	"LAB_CATEGORY" VARCHAR2(25 BYTE),
 --    "LOINC_CODE" VARCHAR2(50 BYTE));
+--This might be UCLA specific but Component_id = 1561653 corresponds to AMINO ACID SCREEN URINE
+-- although linked to the 2160-0 creatinine lab. Therefore we must exclude this lab from the lab_driver
 PROCEDURE p_create_lab_drv_tbl AS
    v_procname varchar2(100) := 'p_create_lab_drv_tbl';
      v_audit_cnt number;
