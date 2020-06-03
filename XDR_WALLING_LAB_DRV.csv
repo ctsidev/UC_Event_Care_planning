@@ -1,13 +1,11 @@
-"LOINC_MAPPING","LAB_FLAG","LOINC_LONG_NAME"
-"1751-7","ALBUMIN","Albumin [Mass/volume] in Serum or Plasma"
-"3097-3","CREATININE","Urea nitrogen/Creatinine [Mass Ratio] in Serum or Plasma"
-"2951-2","SODIUM","Sodium [Moles/volume] in Serum or Plasma"
-"2947-0","SODIUM","Sodium [Moles/volume] in Blood"
-"38483-4","CREATININE","Creatinine [Mass/volume] in Blood"
-"15152-2","BILIRUBIN","Bilirubin.conjugated [Mass/volume] in Serum or Plasma"
-"6301-6","INR","INR in Platelet poor plasma by Coagulation assay"
-"2160-0","ALBUMIN","Creatinine [Mass/volume] in Serum or Plasma"
-"1994-3","SODIUM","Calcium.ionized [Moles/volume] in Blood"
-"1968-7","BILIRUBIN","Bilirubin.direct [Mass/volume] in Serum or Plasma"
-"1975-2","BILIRUBIN","Bilirubin.total [Mass/volume] in Serum or Plasma"
-"2160-0","CREATININE","Creatinine [Mass/volume] in Serum or Plasma"
+LOINC_MAPPING,LAB_FLAG,LOINC_LONG_NAME
+3097-3,CREATININE,Urea nitrogen/Creatinine [Mass Ratio] in Serum or Plasma
+2951-2,SODIUM,Sodium [Moles/volume] in Serum or Plasma
+2947-0,SODIUM,Sodium [Moles/volume] in Blood
+38483-4,CREATININE,Creatinine [Mass/volume] in Blood
+15152-2,BILIRUBIN,Bilirubin.conjugated [Mass/volume] in Serum or Plasma
+6301-6,INR,INR in Platelet poor plasma by Coagulation assay
+1994-3,SODIUM,Calcium.ionized [Moles/volume] in Blood
+1968-7,BILIRUBIN,Bilirubin.direct [Mass/volume] in Serum or Plasma
+1975-2,BILIRUBIN,Bilirubin.total [Mass/volume] in Serum or Plasma
+2160-0,CREATININE,Creatinine [Mass/volume] in Serum or Plasma
