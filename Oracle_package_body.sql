@@ -3174,6 +3174,8 @@ EXECUTE IMMEDIATE q1;
 end P_ACP_AGE_CRTIERIA; 
 
 -------------------------------------------------
+--		This section is optional
+-------------------------------------------------
 -- Pull all Advanced Directive documents on record for selected patients
 -- this pull uses a driver table generated in the first section
 -------------------------------------------------
