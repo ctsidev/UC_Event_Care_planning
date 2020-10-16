@@ -93,7 +93,7 @@ create or replace package                   acp_cohort_refresh as
                                 , p_criteria in varchar2);     
 
       PROCEDURE P_ACP_CHEMO_PROC(p_cohort_table in varchar2 DEFAULT 'CTSI_RESEARCH.XDR_ACP_COHORT'
-                                , p_driver_table  in varchar2 DEFAULT 'CTSI_RESEARCH.XDR_ACP_DX_LOOKUP'
+                                , p_driver_table  in varchar2 DEFAULT 'CTSI_RESEARCH.XDR_ACP_CHEMO_CPT'
                                 , p_timeframe in number DEFAULT 2);
 
       PROCEDURE P_ACP_CHEMO_MEDS(p_cohort_table in varchar2 DEFAULT 'CTSI_RESEARCH.XDR_ACP_COHORT'
