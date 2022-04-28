@@ -2802,7 +2802,10 @@ WHERE
             OR 
             REGEXP_LIKE(prv.primary_specialty,''' || p_dept || ''',''i'') 
             ) 
-    and enc.enc_type_c = 101 
+    and enc.enc_type_c in (101
+                ,76     
+                ,21076  
+                ) 
     AND enc.EFFECTIVE_DATE_DT between sysdate - (365.25 * '|| p_years ||' ) AND sysdate 
     and coh.SELECTED IS NULL 
     )';
